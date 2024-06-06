@@ -74,18 +74,20 @@ def print_tree(files, project_path):
             d = d.setdefault(part, {})
         d.setdefault(parts[-1], None)
     
-    def print_dict(d, indent=0):
+    def print_dict(d, prefix=''):
         """
         递归打印目录结构。
 
         :param d: 表示目录结构的字典
-        :param indent: 当前的缩进级别
+        :param prefix: 当前的前缀，用于打印竖线
         """
-        for key, value in sorted(d.items()):
-            print(f"{'  ' * indent}{key}")
+        pointers = ['├── '] * (len(d) - 1) + ['└── ']
+        for pointer, (key, value) in zip(pointers, sorted(d.items())):
+            print(prefix + pointer + key)
             if isinstance(value, dict):
-                print_dict(value, indent + 1)
-    
+                extension = '│   ' if pointer == '├── ' else '    '
+                print_dict(value, prefix + extension)
+
     print_dict(tree)
 
 def main():
