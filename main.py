@@ -2,6 +2,9 @@ import os
 import json
 import tarfile
 from pathlib import Path
+import tempfile
+import platform
+import subprocess
 
 def read_config(script_path):
     """
@@ -89,6 +92,19 @@ def print_tree(files, project_path):
 
     print_dict(tree)
 
+def open_directory(path):
+    """
+    打开指定路径的目录。
+
+    :param path: 要打开的目录路径
+    """
+    if platform.system() == "Windows":
+        os.startfile(path)
+    elif platform.system() == "Darwin":
+        subprocess.Popen(["open", path])
+    else:
+        subprocess.Popen(["xdg-open", path])
+
 def main():
     """
     执行打包过程的主函数。
@@ -119,12 +135,15 @@ def main():
         print("没有文件需要打包。")
         return
     
-    output_dir = "/tmp"
+    output_dir = tempfile.gettempdir()  # 获取临时目录
     output_path = package_files(project_path, files_to_package, output_dir)
     
     print(f"压缩包创建在: {output_path}")
     print("打包的文件列表:")
     print_tree(files_to_package, project_path)
+    
+    # 打开生成的压缩文件所在的目录
+    open_directory(os.path.dirname(output_path))
 
 if __name__ == "__main__":
     main()
