@@ -1,0 +1,4 @@
+{
+    "file_extensions": [".cpp", ".hpp", ".h", ".json"],
+    "exclude_dirs": ["SLW-Sort_Lifter_Wheel/CANOpen", "src/commination"]
+}
