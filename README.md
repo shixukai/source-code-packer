@@ -15,11 +15,13 @@
 
 ```json
 {
+    "project_path": "/path/to/your/project",
     "file_extensions": [".cpp", ".hpp", ".h", ".json"],
     "exclude_dirs": ["SLW-Sort_Lifter_Wheel/CANOpen", "src/commination"]
 }
 ```
 
+- `project_path`: 项目根目录路径。如果未指定，将提示用户输入。
 - `file_extensions`: 要打包的文件后缀列表。
 - `exclude_dirs`: 需要排除的子目录列表。
 
@@ -34,8 +36,8 @@
 1. 将项目克隆到本地：
 
     ```sh
-    git clone <repository_url>
-    cd <repository_directory>
+    git clone git@github.com:shixukai/source-code-packer.git
+    cd source-code-packer
     ```
 
 2. 创建并配置 `config.json` 文件，参考上面的示例配置文件。
@@ -46,7 +48,7 @@
     python3 main.py
     ```
 
-4. 按提示输入项目路径和需要排除的子目录：
+4. 如果配置文件中未指定 `project_path`，按提示输入项目路径和需要排除的子目录：
 
     ```
     输入项目路径: /path/to/your/project
@@ -67,5 +69,3 @@
 - 排除目录列表为配置文件和用户输入的并集，去重后生效。
 
 ## 支持
-
-如有问题，请联系项目维护者。

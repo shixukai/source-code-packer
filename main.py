@@ -5,21 +5,22 @@ from pathlib import Path
 
 def read_config(script_path):
     """
-    读取配置文件以获取要打包的文件后缀列表和排除的子目录。
+    读取配置文件以获取要打包的文件后缀列表、项目路径和排除的子目录。
 
     :param script_path: 脚本文件的路径
-    :return: 文件后缀列表和排除的子目录列表
+    :return: 文件后缀列表、项目路径和排除的子目录列表
     """
     config_path = os.path.join(script_path, "config.json")
     try:
         with open(config_path, 'r') as file:
             config = json.load(file)
+        project_path = config.get("project_path", "").strip()
         extensions = [ext.lower() for ext in config.get("file_extensions", [])]
         exclude_dirs = config.get("exclude_dirs", [])
-        return extensions, exclude_dirs
+        return project_path, extensions, exclude_dirs
     except Exception as e:
         print(f"读取配置文件出错: {e}")
-        return [], []
+        return "", [], []
 
 def gather_files(project_path, extensions, exclude_dirs):
     """
@@ -51,12 +52,10 @@ def package_files(project_path, files, output_dir):
     """
     project_name = os.path.basename(os.path.normpath(project_path))
     output_path = os.path.join(output_dir, f"{project_name}.tar.gz")
-    
     with tarfile.open(output_path, "w:gz") as tar:
         for file in files:
             arcname = os.path.relpath(file, start=project_path)
             tar.add(file, arcname=arcname)
-    
     return output_path
 
 def print_tree(files, project_path):
@@ -95,13 +94,15 @@ def main():
     执行打包过程的主函数。
     """
     script_path = os.path.dirname(os.path.abspath(__file__))  # 获取脚本文件的目录
-    extensions, config_exclude_dirs = read_config(script_path)
+    project_path, extensions, config_exclude_dirs = read_config(script_path)
     
     if not extensions:
         print("配置文件中未找到文件后缀列表或配置文件为空。")
         return
     
-    project_path = input("输入项目路径: ").strip()
+    if not project_path:
+        project_path = input("输入项目路径: ").strip()
+    
     exclude_dirs = config_exclude_dirs.copy()
 
     while True:
