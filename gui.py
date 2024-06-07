@@ -5,7 +5,7 @@ import threading
 import queue
 import platform
 import subprocess
-from config import read_config, DEFAULT_CONFIG_PATH
+from config import read_config
 from packager import run_packaging
 from logger import ConsoleLogger
 
@@ -57,10 +57,7 @@ def create_gui():
     style.configure('Tag.TButton', background='#e6f7ff', foreground='#d9534f', font=('Arial', 9, 'bold'), padding=(1, 0), relief='flat')
 
     # 读取默认配置
-    if os.path.exists(DEFAULT_CONFIG_PATH):
-        project_path, extensions, exclude_dirs = read_config(DEFAULT_CONFIG_PATH)
-    else:
-        project_path, extensions, exclude_dirs = "", [], []
+    project_path, extensions, exclude_dirs = read_config()
 
     # 项目路径
     tk.Label(root, text="项目路径:").grid(row=0, column=0, padx=10, pady=5, sticky="e")

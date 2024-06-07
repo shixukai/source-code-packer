@@ -1,22 +1,28 @@
+import os
+import sys
 import json
-from tkinter import messagebox
 
-DEFAULT_CONFIG_PATH = "config.json"
+DEFAULT_CONFIG_PATH = 'config.json'
 
-def read_config(config_path=DEFAULT_CONFIG_PATH):
-    """
-    读取配置文件以获取要打包的文件后缀列表、项目路径和排除的子目录。
-
-    :param config_path: 配置文件的路径
-    :return: 文件后缀列表、项目路径和排除的子目录列表
-    """
+def resource_path(relative_path):
+    """获取打包后资源文件的路径"""
     try:
-        with open(config_path, 'r') as file:
-            config = json.load(file)
+        # PyInstaller 创建临时文件夹时
+        base_path = sys._MEIPASS
+        print(f"base_path _MEIPASS: {base_path}")
+    except Exception:
+        base_path = os.path.abspath(".")
+        print(f"base_path: {base_path}")
+
+    return os.path.join(base_path, relative_path)
+
+def read_config(config_path=None):
+    config_path = resource_path(DEFAULT_CONFIG_PATH)
+
+    with open(config_path, 'r', encoding='utf-8') as file:
+        config = json.load(file)
         project_path = config.get("project_path", "").strip()
         extensions = [ext.lower() for ext in config.get("file_extensions", [])]
         exclude_dirs = config.get("exclude_dirs", [])
-        return project_path, extensions, exclude_dirs
-    except Exception as e:
-        messagebox.showerror("配置文件读取错误", f"读取配置文件出错: {e}")
-        return "", [], []
+
+    return project_path, extensions, exclude_dirs
