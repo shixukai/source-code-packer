@@ -11,7 +11,7 @@ def resource_path(relative_path):
         base_path = sys._MEIPASS
         print(f"base_path _MEIPASS: {base_path}")
     except Exception:
-        base_path = os.path.abspath(".")
+        base_path = os.path.abspath("./src")
         print(f"base_path: {base_path}")
 
     return os.path.join(base_path, relative_path)
