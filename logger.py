@@ -1,3 +1,4 @@
+# logger.py
 import tkinter as tk
 
 class ConsoleLogger:
@@ -19,3 +20,9 @@ class ConsoleLogger:
 
     def flush(self):
         pass
+
+    def clear(self):
+        """清空日志显示区域。"""
+        self.text_widget.config(state=tk.NORMAL)
+        self.text_widget.delete(1.0, tk.END)
+        self.text_widget.config(state=tk.DISABLED)
