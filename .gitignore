@@ -1,2 +1,6 @@
 config.json
 *.pyc
+build
+dist
+.DS_Store
+*.spec
