@@ -8,39 +8,14 @@ import subprocess
 from config import read_config
 from packager import run_packaging
 from logger import ConsoleLogger
+from .center_window import center_window
+from .open_directory import open_directory
+from .validate_exclude_dir import validate_exclude_dir, InvalidSubdirectoryException
 
-def open_directory(path):
-    """
-    打开指定路径的目录。
-    """
-    if platform.system() == "Windows":
-        os.startfile(path)
-    elif platform.system() == "Darwin":
-        subprocess.Popen(["open", path])
-    else:
-        subprocess.Popen(["xdg-open", path])
 
-def validate_exclude_dir(exclude_dir, project_path):
-    """
-    验证排除目录是否是有效的子目录。
-    """
-    full_path = os.path.join(project_path, exclude_dir)
-    return os.path.isdir(full_path) and full_path.startswith(project_path)
-
-def center_window(window):
-    """
-    将窗口居中显示在屏幕上。
-    """
-    window.update_idletasks()
-    screen_width = window.winfo_screenwidth()
-    screen_height = window.winfo_screenheight()
-    window_width = window.winfo_reqwidth()
-    window_height = window.winfo_reqheight()
-    
-    position_right = int(screen_width / 2 - window_width / 2)
-    position_down = int(screen_height / 2 - window_height / 2)
-    
-    window.geometry(f"+{position_right}+{position_down}")
+from .center_window import center_window
+from .open_directory import open_directory
+from .validate_exclude_dir import validate_exclude_dir
 
 def create_gui():
     """
@@ -118,21 +93,31 @@ def create_gui():
             tags_scroll.pack_forget()
 
     def add_exclude_dir():
-        """
-        打开项目目录并选择子目录，然后将其添加到排除列表中。
-        """
-        project_path = project_path_entry.get().strip()
-        if not project_path:
-            messagebox.showerror("错误", "请先选择项目路径")
-            return
-
-        selected_dir = filedialog.askdirectory(initialdir=project_path)
-        if selected_dir:
-            relative_dir = os.path.relpath(selected_dir, project_path)
+        current_excludes = exclude_dirs_entry.get().strip()
+        selected_dir = filedialog.askdirectory(initialdir=project_path_entry.get().strip())
+        if selected_dir:  # 只有在用户选择了目录时才更新
+            last_dir_name = os.path.basename(selected_dir)  # 提取最后一级目录名称
+            exclude_dirs_list = [d.strip() for d in current_excludes.split(',') if d.strip()]  # 将现有目录拆分为列表
+            exclude_dirs_list.append(last_dir_name)  # 追加新选择的目录名
+            new_excludes = ", ".join(exclude_dirs_list)  # 重新组合为字符串
             exclude_dirs_entry.delete(0, tk.END)
-            exclude_dirs_entry.insert(0, f"{exclude_dirs_entry.get()};{relative_dir}".strip(";"))
-            logger.write(f"添加了排除的子目录: {relative_dir}\n")
-        root.update_idletasks()  # 强制刷新界面
+            exclude_dirs_entry.insert(0, new_excludes)
+            root.update_idletasks()  # 强制刷新界面
+            """
+            打开项目目录并选择子目录，然后将其添加到排除列表中。
+            """
+            project_path = project_path_entry.get().strip()
+            if not project_path:
+                messagebox.showerror("错误", "请先选择项目路径")
+                return
+
+            selected_dir = filedialog.askdirectory(initialdir=project_path)
+            if selected_dir:
+                relative_dir = os.path.relpath(selected_dir, project_path)
+                exclude_dirs_entry.delete(0, tk.END)
+                exclude_dirs_entry.insert(0, f"{exclude_dirs_entry.get()};{relative_dir}".strip(";"))
+                logger.write(f"添加了排除的子目录: {relative_dir}\n")
+            root.update_idletasks()  # 强制刷新界面
 
     def add_extension(frame, extension, init=False):
         """
@@ -202,7 +187,15 @@ def create_gui():
             messagebox.showerror("错误", "项目路径不能为空")
             return
 
-        valid_exclude_dirs = [d for d in exclude_dirs if validate_exclude_dir(d, updated_project_path)]
+        # 检查每个排除目录是否有效
+        valid_exclude_dirs = []
+        try:
+            for sub_dir in exclude_dirs:
+                validate_exclude_dir(sub_dir, updated_project_path)
+                valid_exclude_dirs += [sub_dir]
+        except InvalidSubdirectoryException as e:
+            messagebox.showerror("错误", str(e))
+            return  # 如果有任何一个目录无效，停止打包操作
 
         logger.clear()
         logger.write("开始打包...\n")
