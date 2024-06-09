@@ -103,9 +103,6 @@ def create_gui():
             exclude_dirs_entry.delete(0, tk.END)
             exclude_dirs_entry.insert(0, new_excludes)
             root.update_idletasks()  # 强制刷新界面
-            """
-            打开项目目录并选择子目录，然后将其添加到排除列表中。
-            """
             project_path = project_path_entry.get().strip()
             if not project_path:
                 messagebox.showerror("错误", "请先选择项目路径")
