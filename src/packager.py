@@ -18,9 +18,11 @@ def gather_files(project_path, extensions, exclude_dirs):
         # 检查并排除子目录
         dirs[:] = [d for d in dirs if os.path.join(root, d) not in exclude_dirs_full]
         for file in files:
+            # 只收集指定扩展名的文件
             if any(file.lower().endswith(ext) for ext in extensions):
                 files_to_package.append(os.path.join(root, file))
     return files_to_package
+
 
 def package_files(project_path, files, output_dir):
     """

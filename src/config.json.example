@@ -1,5 +1,15 @@
 {
-    "project_path": "/path/to/your/project",
-    "file_extensions": [".cpp", ".hpp", ".h", ".json"],
-    "exclude_dirs": ["SLW-Sort_Lifter_Wheel/CANOpen", "src/commination"]
+    "projects": 
+    [
+        {
+            "project_path": "/Users/shixukai/Projects/OpenDevin/workspace/hc_sort_cpp", 
+            "file_extensions": [".cpp", ".hpp", ".h", ".json", ".md", ".png"],
+            "exclude_dirs": ["SLW-Sort_Lifter_Wheel", ".vscode", "test", "build"]
+        },
+        {
+            "project_path": "/Users/shixukai/Projects/OpenDevin/workspace/source-code-packer",
+            "file_extensions": [".py", ".md", ".png"],
+            "exclude_dirs": []
+        }
+    ]
 }

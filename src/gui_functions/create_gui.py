@@ -1,21 +1,16 @@
 import os
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, scrolledtext
-import threading
-import queue
-import platform
-import subprocess
-from config import read_config
+from config import read_config, save_config, delete_config
 from packager import run_packaging
 from logger import ConsoleLogger
 from .center_window import center_window
 from .open_directory import open_directory
 from .validate_exclude_dir import validate_exclude_dir, InvalidSubdirectoryException
-
-
-from .center_window import center_window
-from .open_directory import open_directory
-from .validate_exclude_dir import validate_exclude_dir
+from .exclude_handling import add_exclude_dir
+from .extension_handling import add_extension, remove_extension, update_canvas, initialize_extensions
+from .packaging_handling import on_package_button_click
+from .styles import apply_styles
 
 def create_gui():
     """
@@ -25,38 +20,65 @@ def create_gui():
     root.title("源码打包工具")
     root.geometry("800x700")  # 增加初始高度以容纳更多内容
 
-    # 创建自定义样式
-    style = ttk.Style()
-    style.configure('Tag.TFrame', background='#e6f7ff', borderwidth=1, relief='solid')
-    style.configure('Tag.TLabel', background='#e6f7ff', foreground='#005b96', font=('Arial', 11), padding=(5, 2))
-    style.configure('Tag.TButton', background='#e6f7ff', foreground='#d9534f', font=('Arial', 9, 'bold'), padding=(1, 0), relief='flat')
+    # 应用自定义样式
+    apply_styles()
 
-    # 读取默认配置
-    project_path, extensions, exclude_dirs = read_config()
+    # 读取所有项目配置
+    projects = read_config()
+    project_paths = [project["project_path"] for project in projects]
 
-    # 项目路径
+    # 默认选择第一个项目
+    selected_project = projects[0] if projects else None
+
+    # 项目选择
     tk.Label(root, text="项目路径:").grid(row=0, column=0, padx=10, pady=5, sticky="e")
-    project_path_entry = tk.Entry(root, width=50)
-    project_path_entry.insert(0, project_path)
-    project_path_entry.grid(row=0, column=1, padx=10, pady=5, sticky="we")
 
+    project_path_combo = ttk.Combobox(root, values=project_paths, width=47)
+    project_path_combo.grid(row=0, column=1, padx=10, pady=5, sticky="we")
+    project_path_combo.current(0)  # 默认选择第一个项目路径
+
+    def load_project_config(event=None):
+        """根据选择的项目加载配置"""
+        selected_path = project_path_combo.get()
+        for project in projects:
+            if project["project_path"] == selected_path:
+                # 清空现有的扩展名标签
+                for widget in tags_frame.winfo_children():
+                    widget.destroy()
+                
+                # 清空并重新设置排除目录
+                exclude_dirs_entry.delete(0, tk.END)
+                exclude_dirs_entry.insert(0, ";".join(project["exclude_dirs"]))
+                
+                # 清空并重新设置扩展名输入框
+                extensions_var.set("")
+                
+                # 重新设置扩展名
+                initialize_extensions(root, tags_frame, project["file_extensions"], tags_canvas, tags_scroll, extensions_var)
+                
+                # 更新 selected_project
+                nonlocal selected_project  # 使用 nonlocal 更新外部作用域中的变量
+                selected_project = project
+                break
+
+    project_path_combo.bind("<<ComboboxSelected>>", load_project_config)
+
+    # 浏览按钮
     def browse_project_path():
-        current_path = project_path_entry.get().strip()
+        current_path = project_path_combo.get().strip()
         initial_dir = os.path.dirname(current_path) if current_path else os.path.expanduser("~")
         selected_dir = filedialog.askdirectory(initialdir=initial_dir)
-        if selected_dir:  # 只有在用户选择了目录时才更新路径
-            project_path_entry.delete(0, tk.END)
-            project_path_entry.insert(0, selected_dir)
-        root.update_idletasks()  # 强制刷新界面
+        if selected_dir:
+            project_path_combo.set(selected_dir)
+        root.update_idletasks()
 
     tk.Button(root, text="浏览", command=browse_project_path).grid(row=0, column=2, padx=10, pady=5)
 
     # 排除目录
     tk.Label(root, text="排除的子目录:").grid(row=1, column=0, padx=10, pady=5, sticky="e")
     exclude_dirs_entry = tk.Entry(root, width=50)
-    exclude_dirs_entry.insert(0, ";".join(exclude_dirs))
     exclude_dirs_entry.grid(row=1, column=1, padx=10, pady=5, sticky="we")
-    tk.Button(root, text="添加", command=lambda: add_exclude_dir()).grid(row=1, column=2, padx=10, pady=5)
+    tk.Button(root, text="添加", command=lambda: add_exclude_dir(root, project_path_combo, exclude_dirs_entry)).grid(row=1, column=2, padx=10, pady=5)
 
     # 文件扩展名
     tk.Label(root, text="要打包的文件扩展名:").grid(row=2, column=0, padx=10, pady=5, sticky="e")
@@ -67,7 +89,7 @@ def create_gui():
     extensions_var = tk.StringVar()
     extensions_entry = tk.Entry(root, width=20, textvariable=extensions_var)
     extensions_entry.grid(row=3, column=1, padx=10, pady=5, sticky="we")
-    tk.Button(root, text="添加", command=lambda: add_extension(tags_frame, extensions_entry.get())).grid(row=3, column=2, padx=10, pady=5)
+    tk.Button(root, text="添加扩展名", command=lambda: add_extension(root, tags_frame, extensions_entry.get(), selected_project["file_extensions"], tags_canvas, tags_scroll, extensions_var)).grid(row=3, column=2, padx=10, pady=5)
 
     # 用于展示扩展名标签的Canvas和滚动条
     tags_canvas = tk.Canvas(extensions_frame, height=50, bg="#f0f8ff")
@@ -81,90 +103,10 @@ def create_gui():
 
     tags_canvas.configure(xscrollcommand=tags_scroll.set)
 
-    # 自动更新标签框的大小
-    def update_canvas():
-        tags_frame.update_idletasks()
-        tags_canvas.config(scrollregion=tags_canvas.bbox("all"))
-
-        # 控制滚动条的显示与隐藏
-        if tags_canvas.bbox("all")[2] > tags_canvas.winfo_width():
-            tags_scroll.pack(side=tk.BOTTOM, fill=tk.X)
-        else:
-            tags_scroll.pack_forget()
-
-    def add_exclude_dir():
-        current_excludes = exclude_dirs_entry.get().strip()
-        selected_dir = filedialog.askdirectory(initialdir=project_path_entry.get().strip())
-        if selected_dir:  # 只有在用户选择了目录时才更新
-            last_dir_name = os.path.basename(selected_dir)  # 提取最后一级目录名称
-            exclude_dirs_list = [d.strip() for d in current_excludes.split(',') if d.strip()]  # 将现有目录拆分为列表
-            exclude_dirs_list.append(last_dir_name)  # 追加新选择的目录名
-            new_excludes = ", ".join(exclude_dirs_list)  # 重新组合为字符串
-            exclude_dirs_entry.delete(0, tk.END)
-            exclude_dirs_entry.insert(0, new_excludes)
-            root.update_idletasks()  # 强制刷新界面
-            project_path = project_path_entry.get().strip()
-            if not project_path:
-                messagebox.showerror("错误", "请先选择项目路径")
-                return
-
-            selected_dir = filedialog.askdirectory(initialdir=project_path)
-            if selected_dir:
-                relative_dir = os.path.relpath(selected_dir, project_path)
-                exclude_dirs_entry.delete(0, tk.END)
-                exclude_dirs_entry.insert(0, f"{exclude_dirs_entry.get()};{relative_dir}".strip(";"))
-                logger.write(f"添加了排除的子目录: {relative_dir}\n")
-            root.update_idletasks()  # 强制刷新界面
-
-    def add_extension(frame, extension, init=False):
-        """
-        添加新的文件扩展名并以标签形式展示。
-        """
-        extension = extension.strip()  # 去除可能的空格
-
-        if not extension.startswith('.'):
-            extension = f'.{extension}'  # 自动补全扩展名前的点
-
-        if not extension:
-            return  # 如果扩展名为空，不执行任何操作
-
-        if not init and extension in extensions:
-            messagebox.showinfo("提示", f"扩展名 '{extension}' 已存在")
-            return  # 避免重复添加相同的扩展名
-
-        if not init:
-            extensions.append(extension)
-            extensions_var.set("")  # 清空输入框内容
-            logger.write(f"添加了新的扩展名: {extension}\n")
-
-        # 创建美观的标签显示
-        tag_frame = ttk.Frame(frame, style='Tag.TFrame', padding=2)  # 调整padding使标签更紧凑
-        tag_label = ttk.Label(tag_frame, text=extension, style='Tag.TLabel')
-        tag_label.pack(side=tk.LEFT, padx=3, pady=3)
-        remove_button = ttk.Button(tag_frame, text="x", style='Tag.TButton', width=1, command=lambda: remove_extension(tag_frame, extension))
-        remove_button.pack(side=tk.RIGHT, padx=2, pady=2)  # 调整删除按钮的padding和位置
-        tag_frame.pack(side=tk.LEFT, padx=5, pady=5)
-
-        # 更新标签显示区域
-        update_canvas()
-        root.update_idletasks()  # 强制刷新界面
-
-    def remove_extension(tag_frame, extension):
-        """
-        删除标签形式的文件扩展名。
-        """
-        if extension in extensions:
-            extensions.remove(extension)
-            tag_frame.destroy()
-            logger.write(f"移除了扩展名: {extension}\n")
-            update_canvas()
-            root.update_idletasks()  # 强制刷新界面
-        else:
-            messagebox.showerror("错误", f"扩展名 '{extension}' 不存在")
-
-    # 显示默认的文件扩展名
-    for ext in extensions:
-        add_extension(tags_frame, ext, init=True)
+    # 初始化扩展名标签
+    if selected_project:
+        initialize_extensions(root, tags_frame, selected_project["file_extensions"], tags_canvas, tags_scroll, extensions_var)
+        exclude_dirs_entry.insert(0, ";".join(selected_project["exclude_dirs"]))  # 初始时加载排除目录
 
     # 日志显示区域
     log_display_frame = tk.Frame(root)
@@ -173,74 +115,16 @@ def create_gui():
     log_display = scrolledtext.ScrolledText(log_display_frame, wrap=tk.WORD)
     log_display.pack(fill="both", expand=True)
 
-    logger = ConsoleLogger(log_display)  # 使用正确的小部件
+    logger = ConsoleLogger(log_display)
 
-    def on_package_button_click():
-        updated_project_path = project_path_entry.get().strip()
-        valid_extensions = [ext.strip() for ext in extensions]
-        exclude_dirs = [d.strip() for d in exclude_dirs_entry.get().split(";")]
+    # “清除日志”按钮放在“打包”按钮的上方，占一行
+    tk.Button(root, text="清除日志", command=lambda: logger.clear()).grid(row=5, column=0, padx=10, pady=5, sticky="w")
 
-        if not updated_project_path:
-            messagebox.showerror("错误", "项目路径不能为空")
-            return
+    # 打包按钮放在左下角
+    tk.Button(root, text="打包", command=lambda: on_package_button_click(root, project_path_combo, selected_project, exclude_dirs_entry, logger)).grid(row=6, column=0, padx=10, pady=20, sticky="w")
 
-        # 检查每个排除目录是否有效
-        valid_exclude_dirs = []
-        try:
-            for sub_dir in exclude_dirs:
-                validate_exclude_dir(sub_dir, updated_project_path)
-                valid_exclude_dirs += [sub_dir]
-        except InvalidSubdirectoryException as e:
-            messagebox.showerror("错误", str(e))
-            return  # 如果有任何一个目录无效，停止打包操作
-
-        logger.clear()
-        logger.write("开始打包...\n")
-
-        result_queue = queue.Queue()
-
-        # 启动一个新线程来执行打包过程
-        threading.Thread(target=run_packaging, args=(updated_project_path, valid_extensions, valid_exclude_dirs, result_queue)).start()
-
-        def check_result():
-            try:
-                # 检查队列是否有消息
-                result_message, output_path = result_queue.get_nowait()
-                logger.write(result_message + "\n")
-                if output_path:
-                    # 弹出确认对话框
-                    confirmation_dialog = tk.Toplevel(root)
-                    confirmation_dialog.title("打包完成")
-                    tk.Label(confirmation_dialog, text=f"打包完成，压缩包创建在: {output_path}").pack(padx=20, pady=20)
-
-                    def on_open():
-                        open_directory(os.path.dirname(output_path))
-                        confirmation_dialog.destroy()
-
-                    def on_cancel():
-                        confirmation_dialog.destroy()
-
-                    button_frame = tk.Frame(confirmation_dialog)
-                    button_frame.pack(pady=10)
-
-                    tk.Button(button_frame, text="打开", command=on_open).pack(side=tk.LEFT, padx=10)
-                    tk.Button(button_frame, text="取消", command=on_cancel).pack(side=tk.RIGHT, padx=10)
-
-            except queue.Empty:
-                # 如果队列为空，100ms 后重试
-                root.after(100, check_result)
-
-        # 开始检查结果
-        root.after(100, check_result)
-
-    # 打包按钮
-    tk.Button(root, text="打包", command=on_package_button_click).grid(row=5, column=0, padx=10, pady=20, sticky="w")
-
-    # 清除日志按钮
-    tk.Button(root, text="清除日志", command=lambda: logger.clear()).grid(row=5, column=1, padx=10, pady=20, sticky="w")
-
-    # 退出按钮
-    tk.Button(root, text="退出程序", command=root.quit).grid(row=5, column=2, padx=10, pady=20, sticky="e")
+    # 退出按钮放在右下角
+    tk.Button(root, text="退出程序", command=root.quit).grid(row=6, column=2, padx=10, pady=20, sticky="e")
 
     # 使输入框和日志框在窗口调整大小时扩展
     root.columnconfigure(1, weight=1)  # 使中间列（输入框列）可以调整宽度
@@ -252,5 +136,7 @@ def create_gui():
     # 将窗口居中显示
     center_window(root)
 
-    root.mainloop()
+    # 在程序启动时加载默认项目配置
+    load_project_config()
 
+    root.mainloop()
