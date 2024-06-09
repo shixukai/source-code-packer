@@ -18,7 +18,7 @@ def create_gui():
     """
     root = tk.Tk()
     root.title("源码打包工具")
-    root.geometry("800x700")  # 增加初始高度以容纳更多内容
+    root.geometry("1000x700")  # 初始大小适当调整
 
     # 应用自定义样式
     apply_styles()
@@ -30,10 +30,14 @@ def create_gui():
     # 默认选择第一个项目
     selected_project = projects[0] if projects else None
 
-    # 项目选择
-    tk.Label(root, text="项目路径:").grid(row=0, column=0, padx=10, pady=5, sticky="e")
+    # 创建带边框的Frame用于包含项目配置的各个控件
+    bordered_frame = tk.Frame(root, relief='solid', borderwidth=2, padx=10, pady=10)
+    bordered_frame.grid(row=0, column=0, columnspan=3, padx=10, pady=10, sticky="nsew")
 
-    project_path_combo = ttk.Combobox(root, values=project_paths, width=47)
+    # 项目选择
+    tk.Label(bordered_frame, text="项目路径:").grid(row=0, column=0, padx=10, pady=5, sticky="e")
+
+    project_path_combo = ttk.Combobox(bordered_frame, values=project_paths, width=60)
     project_path_combo.grid(row=0, column=1, padx=10, pady=5, sticky="we")
     project_path_combo.current(0)  # 默认选择第一个项目路径
 
@@ -72,24 +76,24 @@ def create_gui():
             project_path_combo.set(selected_dir)
         root.update_idletasks()
 
-    tk.Button(root, text="浏览", command=browse_project_path).grid(row=0, column=2, padx=10, pady=5)
+    tk.Button(bordered_frame, text="浏览", command=browse_project_path).grid(row=0, column=2, padx=10, pady=5, sticky="e")
 
     # 排除目录
-    tk.Label(root, text="排除的子目录:").grid(row=1, column=0, padx=10, pady=5, sticky="e")
-    exclude_dirs_entry = tk.Entry(root, width=50)
+    tk.Label(bordered_frame, text="排除的子目录:").grid(row=1, column=0, padx=10, pady=5, sticky="e")
+    exclude_dirs_entry = tk.Entry(bordered_frame, width=60)
     exclude_dirs_entry.grid(row=1, column=1, padx=10, pady=5, sticky="we")
-    tk.Button(root, text="添加", command=lambda: add_exclude_dir(root, project_path_combo, exclude_dirs_entry)).grid(row=1, column=2, padx=10, pady=5)
+    tk.Button(bordered_frame, text="添加", command=lambda: add_exclude_dir(root, project_path_combo, exclude_dirs_entry)).grid(row=1, column=2, padx=10, pady=5, sticky="e")
 
     # 文件扩展名
-    tk.Label(root, text="要打包的文件扩展名:").grid(row=2, column=0, padx=10, pady=5, sticky="e")
-    extensions_frame = tk.Frame(root)
-    extensions_frame.grid(row=2, column=1, columnspan=2, padx=10, pady=5, sticky="we")
+    tk.Label(bordered_frame, text="要打包的文件扩展名:").grid(row=2, column=0, padx=10, pady=5, sticky="e")
+    extensions_frame = tk.Frame(bordered_frame)
+    extensions_frame.grid(row=2, column=1, columnspan=1, padx=10, pady=5, sticky="we")
 
     # 标签输入框
     extensions_var = tk.StringVar()
-    extensions_entry = tk.Entry(root, width=20, textvariable=extensions_var)
+    extensions_entry = tk.Entry(bordered_frame, width=40, textvariable=extensions_var)
     extensions_entry.grid(row=3, column=1, padx=10, pady=5, sticky="we")
-    tk.Button(root, text="添加扩展名", command=lambda: add_extension(root, tags_frame, extensions_entry.get(), selected_project["file_extensions"], tags_canvas, tags_scroll, extensions_var)).grid(row=3, column=2, padx=10, pady=5)
+    tk.Button(bordered_frame, text="添加扩展名", command=lambda: add_extension(root, tags_frame, extensions_entry.get(), selected_project["file_extensions"], tags_canvas, tags_scroll, extensions_var)).grid(row=3, column=2, padx=10, pady=5, sticky="e")
 
     # 用于展示扩展名标签的Canvas和滚动条
     tags_canvas = tk.Canvas(extensions_frame, height=50, bg="#f0f8ff")
@@ -108,9 +112,16 @@ def create_gui():
         initialize_extensions(root, tags_frame, selected_project["file_extensions"], tags_canvas, tags_scroll, extensions_var)
         exclude_dirs_entry.insert(0, ";".join(selected_project["exclude_dirs"]))  # 初始时加载排除目录
 
+    # 添加保存和删除配置按钮
+    config_buttons_frame = tk.Frame(bordered_frame)
+    config_buttons_frame.grid(row=4, column=1, columnspan=2, padx=10, pady=5, sticky="we")
+
+    tk.Button(config_buttons_frame, text="保存配置", command=lambda: save_current_config()).pack(side=tk.LEFT, padx=5)
+    tk.Button(config_buttons_frame, text="删除配置", command=lambda: delete_current_config()).pack(side=tk.LEFT, padx=5)
+
     # 日志显示区域
     log_display_frame = tk.Frame(root)
-    log_display_frame.grid(row=4, column=0, columnspan=3, padx=10, pady=5, sticky="nsew")
+    log_display_frame.grid(row=5, column=0, columnspan=3, padx=10, pady=5, sticky="nsew")
 
     log_display = scrolledtext.ScrolledText(log_display_frame, wrap=tk.WORD)
     log_display.pack(fill="both", expand=True)
@@ -118,20 +129,83 @@ def create_gui():
     logger = ConsoleLogger(log_display)
 
     # “清除日志”按钮放在“打包”按钮的上方，占一行
-    tk.Button(root, text="清除日志", command=lambda: logger.clear()).grid(row=5, column=0, padx=10, pady=5, sticky="w")
+    tk.Button(root, text="清除日志", command=lambda: logger.clear()).grid(row=6, column=0, padx=10, pady=5, sticky="w")
 
     # 打包按钮放在左下角
-    tk.Button(root, text="打包", command=lambda: on_package_button_click(root, project_path_combo, selected_project, exclude_dirs_entry, logger)).grid(row=6, column=0, padx=10, pady=20, sticky="w")
+    tk.Button(root, text="打包", command=lambda: on_package_button_click(root, project_path_combo, selected_project, exclude_dirs_entry, logger)).grid(row=7, column=0, padx=10, pady=20, sticky="w")
 
     # 退出按钮放在右下角
-    tk.Button(root, text="退出程序", command=root.quit).grid(row=6, column=2, padx=10, pady=20, sticky="e")
+    tk.Button(root, text="退出程序", command=root.quit).grid(row=7, column=2, padx=10, pady=20, sticky="e")
 
-    # 使输入框和日志框在窗口调整大小时扩展
-    root.columnconfigure(1, weight=1)  # 使中间列（输入框列）可以调整宽度
-    root.rowconfigure(4, weight=1)  # 使日志输出框可以调整高度
+    def save_current_config():
+        """保存当前项目配置到config.json"""
+        project_path = project_path_combo.get().strip()
+        
+        # 检查项目路径是否为空
+        if not project_path:
+            messagebox.showerror("错误", "项目路径不能为空")
+            return
 
-    log_display_frame.columnconfigure(0, weight=1)  # 使日志输出框可以调整宽度
-    log_display_frame.rowconfigure(1, weight=1)  # 使日志输出框可以调整高度
+        file_extensions = selected_project["file_extensions"]
+        exclude_dirs = [d.strip() for d in exclude_dirs_entry.get().split(";") if d.strip()]
+
+        project = {
+            "project_path": project_path,
+            "file_extensions": file_extensions,
+            "exclude_dirs": exclude_dirs
+        }
+        save_config(project)
+        messagebox.showinfo("提示", f"配置已保存到: {project_path}")
+
+        # 更新配置列表
+        nonlocal projects, project_paths
+        projects = read_config()
+        project_paths = [project["project_path"] for project in projects]
+        project_path_combo['values'] = project_paths
+        project_path_combo.set(project_path)  # 重新选择保存的项目
+
+    def delete_current_config():
+        """从config.json中删除当前项目配置"""
+        project_path = project_path_combo.get().strip()
+        
+        # 检查项目路径是否为空
+        if not project_path:
+            messagebox.showerror("错误", "项目路径不能为空")
+            return
+
+        delete_config(project_path)
+        messagebox.showinfo("提示", f"配置已从 {project_path} 中删除")
+
+        # 更新配置
+        nonlocal projects, project_paths
+        projects = read_config()
+        project_paths = [project["project_path"] for project in projects]
+        project_path_combo['values'] = project_paths
+        if project_paths:
+            project_path_combo.current(0)  # 选择第一个项目路径
+            load_project_config()
+        else:
+            project_path_combo.set('')
+            exclude_dirs_entry.delete(0, tk.END)
+            for widget in tags_frame.winfo_children():
+                widget.destroy()
+
+    # 设置自适应布局
+    root.columnconfigure(0, weight=1)  # 设置窗口主列的自适应
+    root.columnconfigure(1, weight=1)  # 设置窗口主列的自适应
+    root.columnconfigure(2, weight=1)  # 设置窗口主列的自适应
+
+    root.rowconfigure(0, weight=1)  # 设置窗口首行的自适应
+    root.rowconfigure(5, weight=3)  # 日志显示区域的自适应高度权重
+    root.rowconfigure(6, weight=0)  # 按钮行的自适应高度权重
+    root.rowconfigure(7, weight=0)  # 按钮行的自适应高度权重
+
+    bordered_frame.columnconfigure(0, weight=0)  # 靠左列
+    bordered_frame.columnconfigure(1, weight=1)  # 中间列
+    bordered_frame.columnconfigure(2, weight=0)  # 靠右列
+
+    log_display_frame.columnconfigure(0, weight=1)  # 日志显示区域的自适应宽度权重
+    log_display_frame.rowconfigure(0, weight=1)  # 日志显示区域的自适应高度权重
 
     # 将窗口居中显示
     center_window(root)
