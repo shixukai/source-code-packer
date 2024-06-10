@@ -1,5 +1,7 @@
+# extension_handling.py
+
 import tkinter as tk
-from tkinter import ttk, messagebox, Canvas
+from tkinter import messagebox, ttk, Canvas
 
 def create_rounded_rectangle(canvas, x1, y1, x2, y2, r=25, **kwargs):
     """

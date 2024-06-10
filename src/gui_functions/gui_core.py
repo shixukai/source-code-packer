@@ -1,3 +1,5 @@
+# gui_core.py
+
 import os
 import tkinter as tk
 from tkinter import ttk, scrolledtext
@@ -5,7 +7,7 @@ from config import read_config
 from logger import ConsoleLogger
 from .extension_handling import initialize_extensions, add_extension, update_canvas, remove_extension
 from .layout_initializers import apply_styles, center_window, set_responsive_layout
-from .event_handlers import save_current_config, load_project_config, browse_project_path, add_exclude_dir, package_code, delete_current_config
+from .event_handlers import save_current_config, load_project_config, browse_project_path, add_exclude_dir, package_code, delete_current_config, reload_current_config
 
 class SourceCodePackerGUI:
     def __init__(self, root):
@@ -79,11 +81,12 @@ class SourceCodePackerGUI:
         if self.selected_project:
             self.load_project_details()
 
-        # 添加保存、删除配置和打包按钮
+        # 添加保存、重载、删除配置和打包按钮
         config_buttons_frame = tk.Frame(bordered_frame)
         config_buttons_frame.grid(row=4, column=1, columnspan=2, padx=10, pady=5, sticky="we")
 
         tk.Button(config_buttons_frame, text="保存配置", command=self.save_current_config).pack(side=tk.LEFT, padx=5)
+        tk.Button(config_buttons_frame, text="重载配置", command=self.reload_current_config).pack(side=tk.LEFT, padx=5)
         tk.Button(config_buttons_frame, text="删除配置", fg='red', command=self.delete_current_config).pack(side=tk.LEFT, padx=5)
         tk.Button(config_buttons_frame, text="打包源码", default='active', command=self.package_code).pack(side=tk.RIGHT, padx=5)
 
@@ -129,6 +132,9 @@ class SourceCodePackerGUI:
 
     def delete_current_config(self):
         delete_current_config(self)
+
+    def reload_current_config(self):
+        reload_current_config(self)
 
     def load_project_details(self):
         """加载当前项目的详细信息"""

@@ -1,3 +1,5 @@
+# event_handlers.py
+
 import os
 from tkinter import messagebox, filedialog
 from .extension_handling import add_extension, initialize_extensions
@@ -13,7 +15,12 @@ def load_project_config(gui):
         if project["project_path"] == selected_path:
             gui.selected_project = project
             gui.load_project_details()  # 加载新的项目详情
-            break
+            return  # 找到匹配的项目后立即返回
+
+    # 如果未找到项目配置，则设置为临时状态
+    gui.selected_project = None
+    gui.temp_extensions = []
+    gui.temp_exclude_dirs = []
 
 def browse_project_path(gui):
     """浏览选择项目路径"""
@@ -116,3 +123,36 @@ def delete_current_config(gui):
     else:
         gui.project_path_combo.set('')
         gui.clear_current_config()
+
+def reload_current_config(gui):
+    """重新从config.json加载当前项目的配置"""
+    project_path = gui.project_path_combo.get().strip()
+
+    if not project_path:
+        messagebox.showerror("错误", "项目路径不能为空")
+        return
+
+    # 重新读取最新的配置
+    projects = read_config()
+    gui.projects = projects
+    gui.project_paths = [project["project_path"] for project in gui.projects]
+    gui.project_path_combo['values'] = gui.project_paths
+
+    # 检查该路径是否在最新的配置中
+    for project in projects:
+        if project["project_path"] == project_path:
+            gui.clear_current_config()
+            gui.selected_project = project
+            gui.load_project_details()  # 加载新的项目详情
+            break
+    else:
+        gui.selected_project = None
+        messagebox.showerror("错误", "项目路径未在配置中找到，请先保存配置")
+        return
+
+
+    if gui.selected_project:
+        # 重新加载配置
+        messagebox.showinfo("提示", f"已重载配置：{project_path}")
+    else:
+        messagebox.showerror("错误", "项目路径未在配置中找到，请先保存配置")
