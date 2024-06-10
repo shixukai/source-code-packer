@@ -112,12 +112,13 @@ def create_gui():
         initialize_extensions(root, tags_frame, selected_project["file_extensions"], tags_canvas, tags_scroll, extensions_var)
         exclude_dirs_entry.insert(0, ";".join(selected_project["exclude_dirs"]))  # 初始时加载排除目录
 
-    # 添加保存和删除配置按钮
+    # 添加保存、删除配置和打包按钮
     config_buttons_frame = tk.Frame(bordered_frame)
     config_buttons_frame.grid(row=4, column=1, columnspan=2, padx=10, pady=5, sticky="we")
 
     tk.Button(config_buttons_frame, text="保存配置", command=lambda: save_current_config()).pack(side=tk.LEFT, padx=5)
-    tk.Button(config_buttons_frame, text="删除配置", command=lambda: delete_current_config()).pack(side=tk.LEFT, padx=5)
+    tk.Button(config_buttons_frame, text="删除配置", fg='red', command=lambda: delete_current_config()).pack(side=tk.LEFT, padx=5)
+    tk.Button(config_buttons_frame, text="打包源码", default='active', command=lambda: on_package_button_click(root, project_path_combo, selected_project, exclude_dirs_entry, logger)).pack(side=tk.RIGHT, padx=5)
 
     # 日志显示区域
     log_display_frame = tk.Frame(root)
@@ -128,14 +129,12 @@ def create_gui():
 
     logger = ConsoleLogger(log_display)
 
-    # “清除日志”按钮放在“打包”按钮的上方，占一行
-    tk.Button(root, text="清除日志", command=lambda: logger.clear()).grid(row=6, column=0, padx=10, pady=5, sticky="w")
+    # 清除日志和退出程序按钮
+    bottom_buttons_frame = tk.Frame(root)
+    bottom_buttons_frame.grid(row=6, column=0, columnspan=3, pady=10, sticky="we")
 
-    # 打包按钮放在左下角
-    tk.Button(root, text="打包", command=lambda: on_package_button_click(root, project_path_combo, selected_project, exclude_dirs_entry, logger)).grid(row=7, column=0, padx=10, pady=20, sticky="w")
-
-    # 退出按钮放在右下角
-    tk.Button(root, text="退出程序", command=root.quit).grid(row=7, column=2, padx=10, pady=20, sticky="e")
+    tk.Button(bottom_buttons_frame, text="清除日志", command=lambda: logger.clear()).pack(side=tk.LEFT, padx=10, pady=5)
+    tk.Button(bottom_buttons_frame, text="退出程序", fg='red', command=root.quit).pack(side=tk.RIGHT, padx=10, pady=5)
 
     def save_current_config():
         """保存当前项目配置到config.json"""
