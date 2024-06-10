@@ -78,7 +78,7 @@ python3 src/main.py
 
 ### 主界面
 
-![主界面](./docs/main_interface.png)
+![主界面](./docs/main_interface.jpeg)
 
 - **项目路径**：用于选择和显示要打包的项目路径。
 - **排除的子目录**：手动输入或通过文件选择对话框添加要排除的子目录。
