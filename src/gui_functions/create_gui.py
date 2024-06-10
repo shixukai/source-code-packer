@@ -2,10 +2,13 @@ import os
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox, scrolledtext
 from config import read_config, save_config, delete_config
+from packager import run_packaging
 from logger import ConsoleLogger
 from .center_window import center_window
+from .open_directory import open_directory
+from .validate_exclude_dir import validate_exclude_dir, InvalidSubdirectoryException
 from .exclude_handling import add_exclude_dir
-from .extension_handling import add_extension, initialize_extensions
+from .extension_handling import add_extension, remove_extension, update_canvas, initialize_extensions
 from .packaging_handling import on_package_button_click
 from .styles import apply_styles
 
@@ -25,6 +28,10 @@ class SourceCodePackerGUI:
         # 默认选择第一个项目
         self.selected_project = self.projects[0] if self.projects else None
 
+        # 临时存储新的项目路径的信息（扩展名和排除目录）
+        self.temp_extensions = []
+        self.temp_exclude_dirs = []
+
         # 创建GUI
         self.create_widgets()
 
@@ -38,7 +45,8 @@ class SourceCodePackerGUI:
         
         self.project_path_combo = ttk.Combobox(bordered_frame, values=self.project_paths, width=60)
         self.project_path_combo.grid(row=0, column=1, padx=10, pady=5, sticky="we")
-        self.project_path_combo.current(0)  # 默认选择第一个项目路径
+        if self.project_paths:
+            self.project_path_combo.current(0)  # 默认选择第一个项目路径
 
         self.project_path_combo.bind("<<ComboboxSelected>>", self.load_project_config)
 
@@ -48,7 +56,7 @@ class SourceCodePackerGUI:
         tk.Label(bordered_frame, text="排除的子目录:").grid(row=1, column=0, padx=10, pady=5, sticky="e")
         self.exclude_dirs_entry = tk.Entry(bordered_frame, width=60)
         self.exclude_dirs_entry.grid(row=1, column=1, padx=10, pady=5, sticky="we")
-        tk.Button(bordered_frame, text="添加", command=lambda: add_exclude_dir(self.root, self.project_path_combo, self.exclude_dirs_entry)).grid(row=1, column=2, padx=10, pady=5, sticky="e")
+        tk.Button(bordered_frame, text="添加", command=lambda: self.add_exclude_dir()).grid(row=1, column=2, padx=10, pady=5, sticky="e")
 
         # 文件扩展名
         tk.Label(bordered_frame, text="要打包的文件扩展名:").grid(row=2, column=0, padx=10, pady=5, sticky="e")
@@ -58,7 +66,7 @@ class SourceCodePackerGUI:
         self.extensions_var = tk.StringVar()
         extensions_entry = tk.Entry(bordered_frame, width=40, textvariable=self.extensions_var)
         extensions_entry.grid(row=3, column=1, padx=10, pady=5, sticky="we")
-        tk.Button(bordered_frame, text="添加扩展名", command=lambda: add_extension(self.root, self.tags_frame, extensions_entry.get(), self.selected_project["file_extensions"], self.tags_canvas, self.tags_scroll, self.extensions_var)).grid(row=3, column=2, padx=10, pady=5, sticky="e")
+        tk.Button(bordered_frame, text="添加扩展名", command=lambda: self.add_extension(extensions_entry.get())).grid(row=3, column=2, padx=10, pady=5, sticky="e")
 
         # 用于展示扩展名标签的Canvas和滚动条
         self.tags_canvas = tk.Canvas(extensions_frame, height=50, bg="#f0f8ff")
@@ -74,8 +82,7 @@ class SourceCodePackerGUI:
 
         # 初始化扩展名标签
         if self.selected_project:
-            initialize_extensions(self.root, self.tags_frame, self.selected_project["file_extensions"], self.tags_canvas, self.tags_scroll, self.extensions_var)
-            self.exclude_dirs_entry.insert(0, ";".join(self.selected_project["exclude_dirs"]))  # 初始时加载排除目录
+            self.load_project_details()
 
         # 添加保存、删除配置和打包按钮
         config_buttons_frame = tk.Frame(bordered_frame)
@@ -107,9 +114,6 @@ class SourceCodePackerGUI:
         # 将窗口居中显示
         center_window(self.root)
 
-        # 在程序启动时加载默认项目配置
-        self.load_project_config()
-
     def set_responsive_layout(self):
         # 设置自适应布局
         self.root.columnconfigure(0, weight=1)  # 设置窗口主列的自适应
@@ -123,26 +127,28 @@ class SourceCodePackerGUI:
 
     def load_project_config(self, event=None):
         """根据选择的项目加载配置"""
+        self.clear_current_config()  # 清空当前显示的配置
         selected_path = self.project_path_combo.get()
         for project in self.projects:
             if project["project_path"] == selected_path:
-                # 清空现有的扩展名标签
-                for widget in self.tags_frame.winfo_children():
-                    widget.destroy()
-                
-                # 清空并重新设置排除目录
-                self.exclude_dirs_entry.delete(0, tk.END)
-                self.exclude_dirs_entry.insert(0, ";".join(project["exclude_dirs"]))
-                
-                # 清空并重新设置扩展名输入框
-                self.extensions_var.set("")
-                
-                # 重新设置扩展名
-                initialize_extensions(self.root, self.tags_frame, project["file_extensions"], self.tags_canvas, self.tags_scroll, self.extensions_var)
-                
-                # 更新 selected_project
                 self.selected_project = project
+                self.load_project_details()  # 加载新的项目详情
                 break
+
+    def load_project_details(self):
+        """加载当前选择的项目详情"""
+        if self.selected_project:
+            self.exclude_dirs_entry.insert(0, ";".join(self.selected_project["exclude_dirs"]))
+            initialize_extensions(self.root, self.tags_frame, self.selected_project["file_extensions"], self.tags_canvas, self.tags_scroll, self.extensions_var)
+
+    def clear_current_config(self):
+        """清空当前项目的排除目录和扩展名标签"""
+        self.exclude_dirs_entry.delete(0, tk.END)
+        for widget in self.tags_frame.winfo_children():
+            widget.destroy()
+        self.extensions_var.set("")
+        self.temp_extensions = []
+        self.temp_exclude_dirs = []
 
     def browse_project_path(self):
         current_path = self.project_path_combo.get().strip()
@@ -150,18 +156,57 @@ class SourceCodePackerGUI:
         selected_dir = filedialog.askdirectory(initialdir=initial_dir)
         if selected_dir:
             self.project_path_combo.set(selected_dir)
+            # 清空显示的当前配置
+            self.clear_current_config()
+            # 检查该路径是否在现有配置中
+            self.selected_project = None
+            for project in self.projects:
+                if project["project_path"] == selected_dir:
+                    self.selected_project = project
+                    self.load_project_details()
+                    break
+
         self.root.update_idletasks()
+
+    def add_exclude_dir(self):
+        """添加排除目录"""
+        add_exclude_dir(self.root, self.project_path_combo, self.exclude_dirs_entry)
+        if not self.selected_project:
+            self.temp_exclude_dirs = [d.strip() for d in self.exclude_dirs_entry.get().split(";") if d.strip()]
+
+    def add_extension(self, extension):
+        if self.selected_project:
+            add_extension(self.root, self.tags_frame, extension, self.selected_project["file_extensions"], self.tags_canvas, self.tags_scroll, self.extensions_var)
+        else:
+            add_extension(self.root, self.tags_frame, extension, self.temp_extensions, self.tags_canvas, self.tags_scroll, self.extensions_var)
+
+    def package_code(self):
+        project_path = self.project_path_combo.get().strip()
+        if not project_path:
+            messagebox.showerror("错误", "请先选择或配置一个项目路径")
+            return
+
+        if self.selected_project:
+            on_package_button_click(self.root, self.project_path_combo, self.selected_project, self.exclude_dirs_entry, self.logger)
+        else:
+            # 临时打包当前未保存的项目配置
+            temp_project = {
+                "project_path": project_path,
+                "file_extensions": self.temp_extensions,
+                "exclude_dirs": self.temp_exclude_dirs
+            }
+            on_package_button_click(self.root, self.project_path_combo, temp_project, self.exclude_dirs_entry, self.logger)
 
     def save_current_config(self):
         """保存当前项目配置到config.json"""
         project_path = self.project_path_combo.get().strip()
-        
+
         # 检查项目路径是否为空
         if not project_path:
             messagebox.showerror("错误", "项目路径不能为空")
             return
 
-        file_extensions = self.selected_project["file_extensions"]
+        file_extensions = self.selected_project["file_extensions"] if self.selected_project else self.temp_extensions
         exclude_dirs = [d.strip() for d in self.exclude_dirs_entry.get().split(";") if d.strip()]
 
         project = {
@@ -177,11 +222,12 @@ class SourceCodePackerGUI:
         self.project_paths = [project["project_path"] for project in self.projects]
         self.project_path_combo['values'] = self.project_paths
         self.project_path_combo.set(project_path)  # 重新选择保存的项目
+        self.selected_project = project
 
     def delete_current_config(self):
         """从config.json中删除当前项目配置"""
         project_path = self.project_path_combo.get().strip()
-        
+
         # 检查项目路径是否为空
         if not project_path:
             messagebox.showerror("错误", "项目路径不能为空")
@@ -199,12 +245,7 @@ class SourceCodePackerGUI:
             self.load_project_config()
         else:
             self.project_path_combo.set('')
-            self.exclude_dirs_entry.delete(0, tk.END)
-            for widget in self.tags_frame.winfo_children():
-                widget.destroy()
-
-    def package_code(self):
-        on_package_button_click(self.root, self.project_path_combo, self.selected_project, self.exclude_dirs_entry, self.logger)
+            self.clear_current_config()
 
 # 导出类，以便其他模块可以导入
 def create_gui():
