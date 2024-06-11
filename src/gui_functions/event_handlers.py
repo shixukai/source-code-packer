@@ -49,13 +49,6 @@ def add_exclude_dir(gui):
     if not gui.selected_project:
         gui.temp_exclude_dirs = [d.strip() for d in gui.exclude_dirs_entry.get().split(";") if d.strip()]
 
-def add_extension(gui, extension):
-    """添加文件扩展名"""
-    if gui.selected_project:
-        add_extension(gui.root, gui.tags_frame, extension, gui.selected_project["file_extensions"], gui.tags_canvas, gui.tags_scroll, gui.extensions_var)
-    else:
-        add_extension(gui.root, gui.tags_frame, extension, gui.temp_extensions, gui.tags_canvas, gui.tags_scroll, gui.extensions_var)
-
 def package_code(gui):
     """处理打包按钮的点击事件"""
     project_path = gui.project_path_combo.get().strip()
@@ -64,15 +57,21 @@ def package_code(gui):
         return
 
     if gui.selected_project:
-        on_package_button_click(gui.root, gui.project_path_combo, gui.selected_project, gui.exclude_dirs_entry, gui.logger)
+        extensions = gui.selected_project["file_extensions"]
     else:
-        # 临时打包当前未保存的项目配置
-        temp_project = {
-            "project_path": project_path,
-            "file_extensions": gui.temp_extensions,
-            "exclude_dirs": gui.temp_exclude_dirs
-        }
-        on_package_button_click(gui.root, gui.project_path_combo, temp_project, gui.exclude_dirs_entry, gui.logger)
+        extensions = gui.temp_extensions
+
+    if not extensions:
+        messagebox.showerror("错误", "请先添加至少一个文件扩展名")
+        return
+
+    project = {
+        "project_path": project_path,
+        "file_extensions": extensions,
+        "exclude_dirs": [d.strip() for d in gui.exclude_dirs_entry.get().split(";") if d.strip()]
+    }
+
+    on_package_button_click(gui.root, gui.project_path_combo, project, gui.exclude_dirs_entry, gui.logger)
 
 def save_current_config(gui):
     """保存当前项目配置到config.json"""
@@ -83,7 +82,11 @@ def save_current_config(gui):
         messagebox.showerror("错误", "项目路径不能为空")
         return
 
-    file_extensions = gui.selected_project["file_extensions"] if gui.selected_project else gui.temp_extensions
+    if gui.selected_project:
+        file_extensions = gui.selected_project["file_extensions"]
+    else:
+        file_extensions = gui.temp_extensions
+
     exclude_dirs = [d.strip() for d in gui.exclude_dirs_entry.get().split(";") if d.strip()]
 
     project = {
@@ -100,6 +103,7 @@ def save_current_config(gui):
     gui.project_path_combo['values'] = gui.project_paths
     gui.project_path_combo.set(project_path)  # 重新选择保存的项目
     gui.selected_project = project
+
 
 def delete_current_config(gui):
     """从config.json中删除当前项目配置"""

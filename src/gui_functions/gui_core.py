@@ -5,7 +5,7 @@ import tkinter as tk
 from tkinter import ttk, scrolledtext
 from config import read_config
 from logger import ConsoleLogger
-from .extension_handling import initialize_extensions, add_extension, update_canvas, remove_extension
+from .extension_handling import initialize_extensions, add_extension
 from .layout_initializers import apply_styles, center_window, set_responsive_layout
 from .event_handlers import save_current_config, load_project_config, browse_project_path, add_exclude_dir, package_code, delete_current_config, reload_current_config
 
@@ -122,7 +122,12 @@ class SourceCodePackerGUI:
         add_exclude_dir(self)
 
     def add_extension(self, extension):
-        add_extension(self.root, self.tags_frame, extension, self.temp_extensions, self.tags_canvas, self.tags_scroll, self.extensions_var)
+        """处理添加文件扩展名的逻辑"""
+        # 检查并添加扩展名到临时或选定项目的扩展名列表
+        if self.selected_project:
+            add_extension(self.root, self.tags_frame, extension, self.selected_project["file_extensions"], self.tags_canvas, self.tags_scroll, self.extensions_var)
+        else:
+            add_extension(self.root, self.tags_frame, extension, self.temp_extensions, self.tags_canvas, self.tags_scroll, self.extensions_var)
 
     def package_code(self):
         package_code(self)
