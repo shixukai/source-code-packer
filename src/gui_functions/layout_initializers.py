@@ -1,3 +1,5 @@
+# layout_initializers.py
+
 from tkinter import ttk
 
 def apply_styles():
@@ -19,18 +21,39 @@ def center_window(root):
     y = (root.winfo_screenheight() // 2) - (height // 2)
     root.geometry('{}x{}+{}+{}'.format(width, height, x, y))
 
-def set_responsive_layout(root, tags_frame, tags_canvas, tags_scroll):
+def set_responsive_layout(root, bordered_frame, log_display_frame, bottom_buttons_frame, tags_frame, tags_canvas, tags_scroll):
     """设置窗口和组件的自适应布局"""
-    root.columnconfigure(0, weight=1)  # 设置窗口主列的自适应
-    root.columnconfigure(1, weight=1)  # 设置窗口主列的自适应
-    root.columnconfigure(2, weight=1)  # 设置窗口主列的自适应
-
-    root.rowconfigure(0, weight=1)  # 设置窗口首行的自适应
+    # 主窗口列配置
+    root.columnconfigure(0, weight=1)  # 使窗口主要列自适应
+    root.rowconfigure(0, weight=1)  # 设置窗口首行自适应
     root.rowconfigure(5, weight=3)  # 日志显示区域的自适应高度权重
     root.rowconfigure(6, weight=0)  # 按钮行的自适应高度权重
-    root.rowconfigure(7, weight=0)  # 按钮行的自适应高度权重
 
+    # 边框框架列配置
+    bordered_frame.columnconfigure(0, weight=0)  # 靠左列
+    bordered_frame.columnconfigure(1, weight=1)  # 中间列
+    bordered_frame.columnconfigure(2, weight=0)  # 靠右列
+
+    # 日志显示区域自适应配置
+    log_display_frame.columnconfigure(0, weight=1)  # 日志显示区域的自适应宽度权重
+    log_display_frame.rowconfigure(0, weight=1)  # 日志显示区域的自适应高度权重
+
+    # 底部按钮区域的自适应配置
+    bottom_buttons_frame.columnconfigure(0, weight=1)  # 底部按钮区域的自适应宽度权重
+
+    # 标签框架自适应配置
     tags_frame.columnconfigure(0, weight=1)  # 标签框架的自适应宽度权重
-    tags_frame.rowconfigure(0, weight=1)  # 标签框架的自适应高度权重
 
-    tags_canvas.configure(scrollregion=tags_canvas.bbox("all"))  # 设置画布的滚动区域
+    # 绑定窗口大小变化事件
+    def on_resize(event):
+        tags_frame.update_idletasks()
+        tags_canvas.configure(scrollregion=tags_canvas.bbox("all"))
+
+        # 控制滚动条的显示与隐藏
+        if tags_canvas.bbox("all")[2] > tags_canvas.winfo_width():
+            tags_scroll.pack(side='bottom', fill='x')
+        else:
+            tags_scroll.pack_forget()
+
+    root.bind('<Configure>', on_resize)
+
