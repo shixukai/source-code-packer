@@ -6,6 +6,7 @@ from tkinter import messagebox, Toplevel
 from .open_directory import open_directory
 from .validate_exclude_dir import validate_exclude_dir, InvalidSubdirectoryException
 from packager import run_packaging
+import platform
 
 def on_package_button_click(root, project_path_entry, selected_project, exclude_dirs_entry, logger):
     """
@@ -52,7 +53,7 @@ def on_package_button_click(root, project_path_entry, selected_project, exclude_
                 tk.Label(confirmation_dialog, text=f"打包完成，压缩包创建在: {output_path}").pack(padx=20, pady=20)
 
                 def on_open():
-                    open_directory(os.path.dirname(output_path))
+                    open_and_select_file(output_path)
                     confirmation_dialog.destroy()
 
                 def on_cancel():
@@ -84,3 +85,14 @@ def on_package_button_click(root, project_path_entry, selected_project, exclude_
 
     # 开始检查结果
     root.after(100, check_result)
+
+def open_and_select_file(file_path):
+    """
+    打开文件所在的目录并选中该文件
+    """
+    if platform.system() == "Windows":
+        os.startfile(file_path)
+    elif platform.system() == "Darwin":
+        os.system(f"open -R '{file_path}'")
+    else:
+        os.system(f"xdg-open '{os.path.dirname(file_path)}'")
