@@ -8,19 +8,23 @@ def resource_path(relative_path):
     base_path = os.path.abspath(os.path.dirname(__file__))
     return os.path.join(base_path, relative_path)
 
+def get_default_config():
+    default_config = {
+        "projects": [
+            {
+                "project_path": "change_project_path_here",
+                "file_extensions": [".py"],
+                "exclude_dirs": ["__pycache__"]
+            }
+        ]
+    }
+    return default_config
+
 def read_config():
     config_path = resource_path(DEFAULT_CONFIG_PATH)
     if not os.path.exists(config_path):
         # 生成默认配置
-        default_config = {
-            "projects": [
-                {
-                    "project_path": "请输入您的项目路径",
-                    "file_extensions": [".py"],
-                    "exclude_dirs": ["__pycache__"]
-                }
-            ]
-        }
+        default_config = get_default_config()
         with open(config_path, 'w', encoding='utf-8') as file:
             json.dump(default_config, file, indent=4)
         return default_config["projects"]
@@ -63,3 +67,16 @@ def delete_config(project_path):
 
     with open(config_path, 'w', encoding='utf-8') as file:
         json.dump({"projects": projects}, file, indent=4)
+
+def export_config(export_path):
+    # Load current configuration
+    config_path = resource_path(DEFAULT_CONFIG_PATH)
+    if not os.path.exists(config_path):
+        config_data = get_default_config()
+    else:
+        with open(config_path, 'r') as config_file:
+            config_data = config_file.read()
+
+    # Write to the specified export path
+    with open(export_path, 'w') as export_file:
+        export_file.write(config_data)

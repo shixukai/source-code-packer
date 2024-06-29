@@ -5,7 +5,7 @@ from tkinter import messagebox, filedialog
 from .extension_handling import add_extension, initialize_extensions
 from .exclude_handling import add_exclude_dir as add_exclude_dir_to_gui
 from .packaging_handling import on_package_button_click
-from config import save_config, delete_config, read_config
+from config import save_config, delete_config, read_config, export_config
 
 def load_project_config(gui):
     """根据选择的项目加载配置"""
@@ -160,3 +160,10 @@ def reload_current_config(gui):
         messagebox.showinfo("提示", f"已重载配置：{project_path}")
     else:
         messagebox.showerror("错误", "项目路径未在配置中找到，请先保存配置")
+
+def export_current_config(gui):
+    # Open file save dialog to choose the export path
+    export_path = filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
+    if export_path:
+        export_config(export_path)
+        messagebox.showinfo("成功", "配置已导出到: " + export_path)
