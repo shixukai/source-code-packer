@@ -1,23 +1,24 @@
+# packaging_handling.py
 import threading
 import queue
 import os
-import tkinter as tk
-from tkinter import messagebox, Toplevel
+from PyQt5.QtWidgets import QMessageBox, QDialog, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QFrame, QApplication
+from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtGui import QFontMetrics
 from .open_directory import open_directory
 from .validate_exclude_dir import validate_exclude_dir, InvalidSubdirectoryException
 from packager import run_packaging
 import platform
 
-def on_package_button_click(root, project_path_entry, selected_project, exclude_dirs_entry, logger):
+def on_package_button_click(root, project_path, selected_project, exclude_dirs, logger):
     """
     处理打包按钮的点击事件。
     """
-    updated_project_path = project_path_entry.get().strip()
+    updated_project_path = project_path.strip()
     valid_extensions = [ext.strip() for ext in selected_project["file_extensions"]]
-    exclude_dirs = [d.strip() for d in exclude_dirs_entry.get().split(";")]
 
     if not updated_project_path:
-        messagebox.showerror("错误", "项目路径不能为空")
+        QMessageBox.critical(root, "错误", "项目路径不能为空")
         return
 
     # 检查每个排除目录是否有效
@@ -27,7 +28,7 @@ def on_package_button_click(root, project_path_entry, selected_project, exclude_
             validate_exclude_dir(sub_dir, updated_project_path)
             valid_exclude_dirs.append(sub_dir)
     except InvalidSubdirectoryException as e:
-        messagebox.showerror("错误", str(e))
+        QMessageBox.critical(root, "错误", str(e))
         return  # 如果有任何一个目录无效，停止打包操作
 
     logger.clear()
@@ -48,43 +49,55 @@ def on_package_button_click(root, project_path_entry, selected_project, exclude_
             logger.write(result_message + "\n")
             if output_path:
                 # 弹出确认对话框
-                confirmation_dialog = Toplevel(root)
-                confirmation_dialog.title("打包完成")
-                tk.Label(confirmation_dialog, text=f"打包完成，压缩包创建在: {output_path}").pack(padx=20, pady=20)
+                confirmation_dialog = QDialog(root)
+                confirmation_dialog.setWindowTitle("打包完成")
+                layout = QVBoxLayout()
 
-                def on_open():
-                    open_and_select_file(output_path)
-                    confirmation_dialog.destroy()
+                layout.addWidget(QLabel(f"打包完成，压缩包创建在: {output_path}"))
 
-                def on_cancel():
-                    confirmation_dialog.destroy()
+                button_frame = QFrame()
+                button_layout = QHBoxLayout()
+                button_frame.setLayout(button_layout)
 
-                button_frame = tk.Frame(confirmation_dialog)
-                button_frame.pack(pady=10)
+                open_button = QPushButton("打开")
+                open_button.clicked.connect(lambda: open_and_select_file(output_path))
+                open_button.clicked.connect(confirmation_dialog.accept)
 
-                tk.Button(button_frame, text="打开", command=on_open).pack(side='left', padx=10)
-                tk.Button(button_frame, text="取消", command=on_cancel).pack(side='right', padx=10)
+                cancel_button = QPushButton("取消")
+                cancel_button.clicked.connect(confirmation_dialog.reject)
 
-                # 设置模式对话框
-                confirmation_dialog.grab_set()
-                confirmation_dialog.transient(root)  # 将对话框设置为主窗口的子窗口
+                # 计算按钮宽度
+                font_metrics = QFontMetrics(open_button.font())
+                open_button_width = font_metrics.horizontalAdvance(open_button.text()) + 50  # 添加一些内边距
+                cancel_button_width = font_metrics.horizontalAdvance(cancel_button.text()) + 50  # 添加一些内边距
+                open_button.setFixedWidth(open_button_width)
+                cancel_button.setFixedWidth(cancel_button_width)
+
+                button_layout.addWidget(open_button)
+                button_layout.addWidget(cancel_button)
+
+                layout.addWidget(button_frame)
+                confirmation_dialog.setLayout(layout)
+
+                # 设置对话框为模态对话框
+                confirmation_dialog.setWindowModality(Qt.ApplicationModal)
 
                 # 将提示框居中显示
-                root.update_idletasks()  # 强制更新主窗口，以确保获取最新的大小
-                window_width = confirmation_dialog.winfo_reqwidth()
-                window_height = confirmation_dialog.winfo_reqheight()
-                position_right = int(root.winfo_screenwidth()/2 - window_width/2)
-                position_down = int(root.winfo_screenheight()/2 - window_height/2)
-                confirmation_dialog.geometry(f"{window_width}x{window_height}+{position_right}+{position_down}")
+                confirmation_dialog.adjustSize()
+                screen_geometry = QApplication.desktop().screenGeometry()
+                dialog_geometry = confirmation_dialog.geometry()
+                x = (screen_geometry.width() - dialog_geometry.width()) // 2
+                y = (screen_geometry.height() - dialog_geometry.height()) // 2
+                confirmation_dialog.move(x, y)
 
-                confirmation_dialog.wait_window(confirmation_dialog)  # 等待窗口关闭
+                confirmation_dialog.exec_()
 
         except queue.Empty:
             # 如果队列为空，100ms 后重试
-            root.after(100, check_result)
+            QTimer.singleShot(100, check_result)
 
     # 开始检查结果
-    root.after(100, check_result)
+    QTimer.singleShot(100, check_result)
 
 def open_and_select_file(file_path):
     """

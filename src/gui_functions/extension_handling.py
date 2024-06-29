@@ -1,113 +1,115 @@
-# extension_handling.py
+from PyQt5.QtWidgets import QWidget, QMessageBox, QHBoxLayout, QLabel, QPushButton, QScrollArea, QFrame, QSizePolicy
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFontMetrics
 
-import tkinter as tk
-from tkinter import messagebox, ttk, Canvas
-
-def create_rounded_rectangle(canvas, x1, y1, x2, y2, r=25, **kwargs):
-    """
-    在给定的坐标上创建一个带有圆角的矩形。
-    """
-    points = [x1 + r, y1,
-              x1 + r, y1,
-              x2 - r, y1,
-              x2 - r, y1,
-              x2, y1,
-              x2, y1 + r,
-              x2, y1 + r,
-              x2, y2 - r,
-              x2, y2 - r,
-              x2, y2,
-              x2 - r, y2,
-              x2 - r, y2,
-              x1 + r, y2,
-              x1 + r, y2,
-              x1, y2,
-              x1, y2 - r,
-              x1, y2 - r,
-              x1, y1 + r,
-              x1, y1 + r,
-              x1, y1]
-    
-    return canvas.create_polygon(points, **kwargs, smooth=True)
-
-def add_extension(root, frame, extension, extensions, canvas, scrollbar, entry_var, init=False):
+def add_extension(root, layout, extension, extensions, canvas, entry_var, init=False):
     """
     添加新的文件扩展名并以标签形式展示。
     """
     extension = extension.strip()  # 去除可能的空格
 
     if not extension:
-        messagebox.showerror("错误", "扩展名不能为空或仅包含空格")
+        QMessageBox.critical(root, "错误", "扩展名不能为空或仅包含空格")
         return
 
     if not extension.startswith('.'):
         extension = f'.{extension}'  # 自动补全扩展名前的点
 
     if not init and extension in extensions:
-        messagebox.showinfo("提示", f"扩展名 '{extension}' 已存在")
+        QMessageBox.information(root, "提示", f"扩展名 '{extension}' 已存在")
         return  # 避免重复添加相同的扩展名
 
     if not init:
         extensions.append(extension)
 
-    # 创建Canvas来绘制圆角背景和标签
-    tag_canvas = Canvas(frame, width=80, height=30, bg=frame.cget('bg'), bd=0, highlightthickness=0)
-    tag_canvas.pack(side='left', padx=5, pady=5)
+    # 创建用于标签和删除按钮的容器
+    tag_widget = QFrame()
+    tag_layout = QHBoxLayout(tag_widget)
+    tag_layout.setContentsMargins(0, 0, 0, 0)
+    tag_layout.setSpacing(0)
 
-    # 绘制带有圆角矩形的背景
-    create_rounded_rectangle(tag_canvas, 5, 5, 75, 25, r=10, fill='#f0f8ff', outline='black')
+    # 创建标签
+    label = QLabel(extension)
+    label.setFixedHeight(25)
+    label.setStyleSheet("""
+        QLabel {
+            background-color: #e0f7fa;
+            color: #00796b;
+            padding: 3px;
+            border: 1px solid #004d40;
+            border-top-left-radius: 3px;
+            border-bottom-left-radius: 3px;
+            font-size: 12px;
+        }
+    """)
+    label.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
 
-    # 在Canvas上创建标签
-    tag_canvas.create_text(20, 15, text=extension, anchor='w', fill='blue')
+    # 动态计算标签宽度
+    font_metrics = QFontMetrics(label.font())
+    text_width = font_metrics.horizontalAdvance(extension)
+    label.setFixedWidth(text_width + 15)  # 添加一些 padding
 
-    # 在Canvas上创建删除按钮
-    delete_btn = tag_canvas.create_text(60, 15, text='x', anchor='w', fill='red')
-    
-    # 绑定删除按钮的点击事件
-    def delete_action(event, tag=tag_canvas, ext=extension):
-        remove_extension(root, tag, ext, extensions, canvas, scrollbar)
+    tag_layout.addWidget(label)
 
-    tag_canvas.tag_bind(delete_btn, "<Button-1>", delete_action)
+    # 创建删除按钮
+    delete_btn = QPushButton('✕')
+    delete_btn.setFixedHeight(25)
+    delete_btn.setFixedWidth(25)
+    delete_btn.setStyleSheet("""
+        QPushButton {
+            background-color: #ffccbc;
+            color: #d32f2f;
+            border: 1px solid #b71c1c;
+            border-top-right-radius: 3px;
+            border-bottom-right-radius: 3px;
+            font-size: 12px;
+        }
+        QPushButton:hover {
+            background-color: #ef9a9a;
+        }
+    """)
+    delete_btn.clicked.connect(lambda: remove_extension(root, tag_widget, extension, extensions, canvas))
+    tag_layout.addWidget(delete_btn)
+
+    tag_widget.setLayout(tag_layout)
+    tag_widget.setFixedHeight(25)
+    layout.addWidget(tag_widget, 0, Qt.AlignLeft)
+
+    # 设置固定的标签间距
+    layout.setSpacing(10)
 
     # 更新标签显示区域
-    update_canvas(root, frame, canvas, scrollbar)
-    root.update_idletasks()  # 强制刷新界面
+    update_canvas(root, layout, canvas)
 
     # 清空输入框内容
     if not init:
-        entry_var.set("")
+        entry_var.setText("")
 
-def remove_extension(root, tag_canvas, extension, extensions, canvas, scrollbar):
+def remove_extension(root, tag_widget, extension, extensions, canvas):
     """
     删除标签形式的文件扩展名。
     """
     if extension in extensions:
         extensions.remove(extension)
-        tag_canvas.destroy()
-        update_canvas(root, tag_canvas.master, canvas, scrollbar)
-        root.update_idletasks()  # 强制刷新界面
+        tag_widget.deleteLater()
+        update_canvas(root, tag_widget.parentWidget().layout(), canvas)
     else:
-        messagebox.showerror("错误", f"扩展名 '{extension}' 不存在")
+        QMessageBox.critical(root, "错误", f"扩展名 '{extension}' 不存在")
 
-def update_canvas(root, frame, canvas, scrollbar):
+def update_canvas(root, layout, canvas):
     """
     更新标签显示区域的大小。
     """
-    frame.update_idletasks()
-    canvas.config(scrollregion=canvas.bbox("all"))
+    canvas_widget = canvas.widget()
+    if canvas_widget:
+        canvas_widget.updateGeometry()
+    canvas.setWidgetResizable(True)
+    canvas.setWidget(layout.parentWidget())
+    layout.parentWidget().updateGeometry()
 
-    # 控制滚动条的显示与隐藏
-    if canvas.bbox("all")[2] > canvas.winfo_width():
-        scrollbar.pack(side='bottom', fill='x')
-    else:
-        scrollbar.pack_forget()
-
-    # 强制刷新界面，以更新显示区域
-    root.update_idletasks()
-
-def initialize_extensions(root, frame, extensions, canvas, scrollbar, entry_var):
+def initialize_extensions(root, layout, extensions, canvas, entry_var):
     """
     初始化显示默认的文件扩展名。
     """
     for ext in extensions:
-        add_extension(root, frame, ext, extensions, canvas, scrollbar, entry_var, init=True)
+        add_extension(root, layout, ext, extensions, canvas, entry_var, init=True)

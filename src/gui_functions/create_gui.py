@@ -1,9 +1,10 @@
 # create_gui.py
 
-import tkinter as tk
+from PyQt5.QtWidgets import QApplication
 from .gui_core import SourceCodePackerGUI
 
 def create_gui():
-    root = tk.Tk()
-    app = SourceCodePackerGUI(root)
-    root.mainloop()
+    app = QApplication([])
+    window = SourceCodePackerGUI()
+    window.show()
+    app.exec_()

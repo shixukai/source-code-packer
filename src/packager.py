@@ -1,3 +1,5 @@
+# packager.py
+
 import os
 import tarfile
 from pathlib import Path
@@ -22,7 +24,6 @@ def gather_files(project_path, extensions, exclude_dirs):
             if any(file.lower().endswith(ext) for ext in extensions):
                 files_to_package.append(os.path.join(root, file))
     return files_to_package
-
 
 def package_files(project_path, files, output_dir):
     """

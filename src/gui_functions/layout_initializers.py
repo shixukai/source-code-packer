@@ -1,59 +1,71 @@
 # layout_initializers.py
 
-from tkinter import ttk
+from PyQt5.QtWidgets import QStyleFactory, QPushButton
+from PyQt5.QtGui import QFontMetrics
 
 def apply_styles():
     """
     应用自定义样式。
     """
-    style = ttk.Style()
-    style.configure('Tag.TFrame', background='#e6f7ff', borderwidth=1, relief='solid')
-    style.configure('Tag.TLabel', background='#e6f7ff', foreground='#005b96', font=('Arial', 11), padding=(5, 2))
-    style.configure('Tag.TButton', background='#e6f7ff', foreground='#d9534f', font=('Arial', 9, 'bold'), padding=(1, 0), relief='flat')
+    # PyQt5中的样式可以通过QSS进行配置
+    pass  # 根据需要添加样式
 
-
-def center_window(root):
+def center_window(window):
     """将窗口居中"""
-    root.update_idletasks()
-    width = root.winfo_width()
-    height = root.winfo_height()
-    x = (root.winfo_screenwidth() // 2) - (width // 2)
-    y = (root.winfo_screenheight() // 2) - (height // 2)
-    root.geometry('{}x{}+{}+{}'.format(width, height, x, y))
+    screen_geometry = window.screen().geometry()
+    window_geometry = window.geometry()
+    x = (screen_geometry.width() - window_geometry.width()) // 2
+    y = (screen_geometry.height() - window_geometry.height()) // 2
+    window.move(x, y)
 
-def set_responsive_layout(root, bordered_frame, log_display_frame, bottom_buttons_frame, tags_frame, tags_canvas, tags_scroll):
+def set_responsive_layout(window):
     """设置窗口和组件的自适应布局"""
-    # 主窗口列配置
-    root.columnconfigure(0, weight=1)  # 使窗口主要列自适应
-    root.rowconfigure(0, weight=1)  # 设置窗口首行自适应
-    root.rowconfigure(5, weight=3)  # 日志显示区域的自适应高度权重
-    root.rowconfigure(6, weight=0)  # 按钮行的自适应高度权重
+    window.setStyle(QStyleFactory.create('Fusion'))  # 根据需要设置样式
 
-    # 边框框架列配置
-    bordered_frame.columnconfigure(0, weight=0)  # 靠左列
-    bordered_frame.columnconfigure(1, weight=1)  # 中间列
-    bordered_frame.columnconfigure(2, weight=0)  # 靠右列
+def create_styled_button(text, color="default"):
+    button = QPushButton(text)
+    if color == "green":
+        button.setStyleSheet("""
+            QPushButton {
+                background-color: #28a745;
+                color: white;
+                border: 1px solid #004d40;
+                padding: 5px 10px;
+                border-radius: 5px;
+            }
+            QPushButton:pressed {
+                background-color: #004d40;
+                border: 1px solid #00251a;
+            }
+        """)
+    elif color == "red":
+        button.setStyleSheet("""
+            QPushButton {
+                color: red;
+                border: 1px solid #ccc;
+                padding: 5px 10px;
+                border-radius: 5px;
+            }
+            QPushButton:pressed {
+                color: darkred;
+            }
+        """)
+    else:
+        button.setStyleSheet("""
+            QPushButton {
+                color: black;
+                border: 1px solid #ccc;
+                padding: 5px 10px;
+                border-radius: 5px;
+            }
+            QPushButton:pressed {
+                color: darkgray;
+            }
+        """)
 
-    # 日志显示区域自适应配置
-    log_display_frame.columnconfigure(0, weight=1)  # 日志显示区域的自适应宽度权重
-    log_display_frame.rowconfigure(0, weight=1)  # 日志显示区域的自适应高度权重
+    # 计算按钮文字的宽度
+    font_metrics = QFontMetrics(button.font())
+    text_width = font_metrics.horizontalAdvance(text) + 40  # 加一些内边距
+    button.setFixedWidth(text_width)
 
-    # 底部按钮区域的自适应配置
-    bottom_buttons_frame.columnconfigure(0, weight=1)  # 底部按钮区域的自适应宽度权重
-
-    # 标签框架自适应配置
-    tags_frame.columnconfigure(0, weight=1)  # 标签框架的自适应宽度权重
-
-    # 绑定窗口大小变化事件
-    def on_resize(event):
-        tags_frame.update_idletasks()
-        tags_canvas.configure(scrollregion=tags_canvas.bbox("all"))
-
-        # 控制滚动条的显示与隐藏
-        if tags_canvas.bbox("all")[2] > tags_canvas.winfo_width():
-            tags_scroll.pack(side='bottom', fill='x')
-        else:
-            tags_scroll.pack_forget()
-
-    root.bind('<Configure>', on_resize)
-
+    return button

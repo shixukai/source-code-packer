@@ -1,12 +1,17 @@
 # gui_core.py
 
 import os
-import tkinter as tk
-from tkinter import ttk, scrolledtext
+from PyQt5.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox,
+    QLineEdit, QTextEdit, QFrame, QScrollArea, QGridLayout, QGroupBox
+)
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QCursor, QFontMetrics
+
 from config import read_config
 from logger import ConsoleLogger
 from .extension_handling import initialize_extensions, add_extension
-from .layout_initializers import apply_styles, center_window, set_responsive_layout
+from .layout_initializers import apply_styles, center_window, set_responsive_layout, create_styled_button
 from .event_handlers import (
     save_current_config_handler,
     load_project_config_handler,
@@ -20,17 +25,17 @@ from .event_handlers import (
     show_current_config_handler
 )
 
-class SourceCodePackerGUI:
-    def __init__(self, root):
-        self.root = root
-        self.root.title("源码打包工具")
+class SourceCodePackerGUI(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("源码打包工具")
 
         default_width = 900
         default_height = 700
-        root.geometry(f"{default_width}x{default_height}")
+        self.resize(default_width, default_height)
 
-    # 设置最小尺寸
-        root.minsize(default_width, default_height)
+        # 设置最小尺寸
+        self.setMinimumSize(default_width, default_height)
 
         # 初始化样式
         apply_styles()
@@ -50,144 +55,168 @@ class SourceCodePackerGUI:
         self.create_widgets()
 
     def create_widgets(self):
+        layout = QVBoxLayout()
+
         # 创建带边框的Frame用于包含项目配置的各个控件
-        self.bordered_frame = tk.Frame(self.root, relief='solid', borderwidth=2, padx=10, pady=10)
-        self.bordered_frame.grid(row=0, column=0, columnspan=3, padx=10, pady=10, sticky="nsew")
+        bordered_frame = QGroupBox()
+        bordered_layout = QGridLayout()
+        bordered_frame.setLayout(bordered_layout)
+
+        fixed_height = 260
+        bordered_frame.setMinimumHeight(fixed_height)
+        bordered_frame.setMaximumHeight(fixed_height)
 
         # 项目选择
-        tk.Label(self.bordered_frame, text="项目路径:").grid(row=0, column=0, padx=10, pady=5, sticky="e")
+        bordered_layout.addWidget(QLabel("项目路径:"), 0, 0)
         
-        self.project_path_combo = ttk.Combobox(self.bordered_frame, values=self.project_paths, width=60)
-        self.project_path_combo.grid(row=0, column=1, padx=10, pady=5, sticky="we")
-        if self.project_paths:
-            self.project_path_combo.current(0)  # 默认选择第一个项目路径
-
-        self.project_path_combo.bind("<<ComboboxSelected>>", self.load_project_config)
-
-        tk.Button(self.bordered_frame, text="浏览", command=self.browse_project_path).grid(row=0, column=2, padx=10, pady=5, sticky="e")
+        self.project_path_combo = QComboBox()
+        self.project_path_combo.addItems(self.project_paths)
+        self.project_path_combo.setCurrentIndex(0)
+        self.project_path_combo.currentIndexChanged.connect(lambda: load_project_config_handler(self))
+        bordered_layout.addWidget(self.project_path_combo, 0, 1)
+        
+        browse_button = create_styled_button("浏览")
+        browse_button.clicked.connect(lambda: browse_project_path_handler(self))
+        bordered_layout.addWidget(browse_button, 0, 2)
 
         # 排除目录
-        tk.Label(self.bordered_frame, text="排除的子目录:").grid(row=1, column=0, padx=10, pady=5, sticky="e")
-        self.exclude_dirs_entry = tk.Entry(self.bordered_frame, width=60)
-        self.exclude_dirs_entry.grid(row=1, column=1, padx=10, pady=5, sticky="we")
-        tk.Button(self.bordered_frame, text="添加", command=self.add_exclude_dir).grid(row=1, column=2, padx=10, pady=5, sticky="e")
+        bordered_layout.addWidget(QLabel("排除的子目录:"), 1, 0)
+        self.exclude_dirs_entry = QLineEdit()
+        bordered_layout.addWidget(self.exclude_dirs_entry, 1, 1)
+        add_exclude_button = create_styled_button("添加")
+        add_exclude_button.clicked.connect(lambda: add_exclude_dir_handler(self))
+        bordered_layout.addWidget(add_exclude_button, 1, 2)
 
         # 文件扩展名
-        tk.Label(self.bordered_frame, text="要打包的文件扩展名:").grid(row=2, column=0, padx=10, pady=5, sticky="e")
-        extensions_frame = tk.Frame(self.bordered_frame)
-        extensions_frame.grid(row=2, column=1, columnspan=1, padx=10, pady=5, sticky="we")
+        bordered_layout.addWidget(QLabel("要打包的文件扩展名:"), 2, 0)
+        self.extensions_var = QLineEdit()
+        extensions_entry = self.extensions_var
+        bordered_layout.addWidget(extensions_entry, 2, 1)
+        add_extension_button = create_styled_button("添加扩展名")
+        add_extension_button.clicked.connect(lambda: self.add_extension(extensions_entry.text()))
+        bordered_layout.addWidget(add_extension_button, 2, 2)
 
-        self.extensions_var = tk.StringVar()
-        extensions_entry = tk.Entry(self.bordered_frame, width=40, textvariable=self.extensions_var)
-        extensions_entry.grid(row=3, column=1, padx=10, pady=5, sticky="we")
-        tk.Button(self.bordered_frame, text="添加扩展名", command=lambda: self.add_extension(extensions_entry.get())).grid(row=3, column=2, padx=10, pady=5, sticky="e")
-
-        # 用于展示扩展名标签的Canvas和滚动条
-        self.tags_canvas = tk.Canvas(extensions_frame, height=50, bg="#f0f8ff")
-        self.tags_canvas.pack(side=tk.TOP, fill=tk.X, expand=True)
-
-        self.tags_frame = tk.Frame(self.tags_canvas, bg="#f0f8ff")
-        self.tags_canvas.create_window((0, 0), window=self.tags_frame, anchor='nw')
-
-        self.tags_scroll = tk.Scrollbar(extensions_frame, orient=tk.HORIZONTAL, command=self.tags_canvas.xview)
-        self.tags_scroll.pack(side=tk.BOTTOM, fill=tk.X)
-
-        self.tags_canvas.configure(xscrollcommand=self.tags_scroll.set)
+        # 用于展示扩展名标签的QScrollArea和QWidget
+        self.tags_frame = QScrollArea()
+        self.tags_widget = QWidget()
+        self.tags_layout = QHBoxLayout(self.tags_widget)  # 使用 QHBoxLayout 以确保标签水平排列
+        self.tags_widget.setLayout(self.tags_layout)
+        self.tags_frame.setWidget(self.tags_widget)
+        self.tags_frame.setWidgetResizable(True)
+        self.tags_frame.setMinimumHeight(60)
+        self.tags_frame.setMaximumHeight(60)
+        self.tags_frame.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
+        self.tags_frame.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        bordered_layout.addWidget(self.tags_frame, 3, 0, 1, 3)
 
         # 初始化扩展名标签
         if self.selected_project:
             self.load_project_details()
 
-        # 添加保存、重载、删除配置和打包按钮
-        config_buttons_frame = tk.Frame(self.bordered_frame)
-        config_buttons_frame.grid(row=4, column=1, columnspan=2, padx=10, pady=5, sticky="we")
+        layout.addWidget(bordered_frame)
 
-        extra_buttons_frame = tk.Frame(self.bordered_frame)
-        extra_buttons_frame.grid(row=5, column=1, columnspan=2, padx=10, pady=5, sticky="we")
+        # 添加保存、重载、删除配置按钮
+        config_buttons_frame = QFrame()
+        config_buttons_layout = QHBoxLayout(config_buttons_frame)
+        config_buttons_layout.setSpacing(10)
+        
+        save_button = create_styled_button("保存配置")
+        save_button.clicked.connect(lambda: save_current_config_handler(self))
+        config_buttons_layout.addWidget(save_button)
 
-        tk.Button(config_buttons_frame, text="保存配置", command=self.save_current_config).pack(side=tk.LEFT, padx=5)
-        tk.Button(config_buttons_frame, text="重载配置", command=self.reload_current_config).pack(side=tk.LEFT, padx=5)
-        tk.Button(config_buttons_frame, text="删除配置", fg='red', command=self.delete_current_config).pack(side=tk.LEFT, padx=5)
-        tk.Button(config_buttons_frame, text="打包源码", default='active', command=self.package_code).pack(side=tk.RIGHT, padx=5)
+        reload_button = create_styled_button("重载配置")
+        reload_button.clicked.connect(lambda: reload_current_config_handler(self))
+        config_buttons_layout.addWidget(reload_button)
 
-        tk.Button(extra_buttons_frame, text="导出配置", fg='blue', command=self.export_current_config).pack(side=tk.LEFT, padx=5)
-        tk.Button(extra_buttons_frame, text="导入配置", fg='blue', command=self.import_config).pack(side=tk.LEFT, padx=5)
-        tk.Button(extra_buttons_frame, text="查看配置", fg='green', command=self.show_current_config).pack(side=tk.LEFT, padx=5)
+        delete_button = create_styled_button("删除配置", "red")
+        delete_button.clicked.connect(lambda: delete_current_config_handler(self))
+        config_buttons_layout.addWidget(delete_button)
+
+        # 添加打包按钮
+        package_button = create_styled_button("打包源码", "green")
+        package_button.clicked.connect(lambda: package_code_handler(self))
+        config_buttons_layout.addWidget(package_button, alignment=Qt.AlignRight)
+
+        layout.addWidget(config_buttons_frame)
+
+        # 添加导出、导入和查看配置按钮
+        extra_buttons_frame = QFrame()
+        extra_buttons_layout = QHBoxLayout(extra_buttons_frame)
+        extra_buttons_layout.setSpacing(10)
+        
+        export_button = create_styled_button("导出配置")
+        export_button.clicked.connect(lambda: export_current_config_handler(self))
+        extra_buttons_layout.addWidget(export_button)
+
+        import_button = create_styled_button("导入配置")
+        import_button.clicked.connect(lambda: import_config_handler(self))
+        extra_buttons_layout.addWidget(import_button)
+
+        show_button = create_styled_button("查看配置")
+        show_button.clicked.connect(lambda: show_current_config_handler(self))
+        extra_buttons_layout.addWidget(show_button)
+
+        layout.addWidget(extra_buttons_frame, alignment=Qt.AlignLeft)
 
         # 日志显示区域
-        self.log_display_frame = tk.Frame(self.root)
-        self.log_display_frame.grid(row=6, column=0, columnspan=3, padx=10, pady=5, sticky="nsew")
+        log_display_frame = QFrame()
+        log_display_layout = QVBoxLayout()
+        log_display_frame.setLayout(log_display_layout)
 
-        log_display = scrolledtext.ScrolledText(self.log_display_frame, wrap=tk.WORD)
-        log_display.pack(fill="both", expand=True)
+        log_display = QTextEdit()
+        log_display.setReadOnly(True)
+        log_display.setLineWrapMode(QTextEdit.WidgetWidth)
+        log_display_layout.addWidget(log_display)
 
         self.logger = ConsoleLogger(log_display)
 
-        # 清除日志和退出程序按钮
-        self.bottom_buttons_frame = tk.Frame(self.root)
-        self.bottom_buttons_frame.grid(row=7, column=0, columnspan=3, pady=10, sticky="we")
+        layout.addWidget(log_display_frame)
 
-        tk.Button(self.bottom_buttons_frame, text="清除日志", command=self.logger.clear).pack(side=tk.LEFT, padx=10, pady=5)
-        tk.Button(self.bottom_buttons_frame, text="退出程序", fg='red', command=self.root.quit).pack(side=tk.RIGHT, padx=10, pady=5)
+        # 清除日志和退出程序按钮
+        bottom_buttons_frame = QFrame()
+        bottom_buttons_layout = QHBoxLayout(bottom_buttons_frame)
+        
+        clear_log_button = create_styled_button("清除日志")
+        clear_log_button.clicked.connect(self.logger.clear)
+        bottom_buttons_layout.addWidget(clear_log_button, alignment=Qt.AlignLeft)
+
+        exit_button = create_styled_button("退出程序", "red")
+        exit_button.clicked.connect(self.close)
+        bottom_buttons_layout.addWidget(exit_button, alignment=Qt.AlignRight)
+
+        layout.addWidget(bottom_buttons_frame)
+
+        self.setLayout(layout)
 
         # 设置自适应布局
-        set_responsive_layout(self.root, self.bordered_frame, self.log_display_frame, self.bottom_buttons_frame, self.tags_frame, self.tags_canvas, self.tags_scroll)
+        set_responsive_layout(self)
 
         # 将窗口居中显示
-        center_window(self.root)
-
-    def load_project_config(self, event=None):
-        load_project_config_handler(self)
-
-    def browse_project_path(self):
-        browse_project_path_handler(self)
-
-    def add_exclude_dir(self):
-        add_exclude_dir_handler(self)
+        center_window(self)
 
     def add_extension(self, extension):
         """处理添加文件扩展名的逻辑"""
         # 检查并添加扩展名到临时或选定项目的扩展名列表
         if self.selected_project:
-            add_extension(self.root, self.tags_frame, extension, self.selected_project["file_extensions"], self.tags_canvas, self.tags_scroll, self.extensions_var)
+            add_extension(self, self.tags_layout, extension, self.selected_project["file_extensions"], self.tags_frame, self.extensions_var)
         else:
-            add_extension(self.root, self.tags_frame, extension, self.temp_extensions, self.tags_canvas, self.tags_scroll, self.extensions_var)
-
-    def package_code(self):
-        package_code_handler(self)
-
-    def save_current_config(self):
-        save_current_config_handler(self)
-
-    def delete_current_config(self):
-        delete_current_config_handler(self)
-
-    def reload_current_config(self):
-        reload_current_config_handler(self)
-
-    def export_current_config(self):
-        export_current_config_handler(self)
-    
-    def import_config(self):
-        import_config_handler(self)
-    
-    def show_current_config(self):
-        show_current_config_handler(self)
+            add_extension(self, self.tags_layout, extension, self.temp_extensions, self.tags_frame, self.extensions_var)
 
     def load_project_details(self):
         """加载当前项目的详细信息"""
         if self.selected_project:
-            initialize_extensions(self.root, self.tags_frame, self.selected_project["file_extensions"], self.tags_canvas, self.tags_scroll, self.extensions_var)
-            self.exclude_dirs_entry.delete(0, tk.END)
-            self.exclude_dirs_entry.insert(0, ";".join(self.selected_project["exclude_dirs"]))
+            initialize_extensions(self, self.tags_layout, self.selected_project["file_extensions"], self.tags_frame, self.extensions_var)
+            self.exclude_dirs_entry.setText(";".join(self.selected_project["exclude_dirs"]))
         else:
             self.clear_current_config()
 
     def clear_current_config(self):
         """清空当前显示的配置"""
-        self.exclude_dirs_entry.delete(0, tk.END)
-        for widget in self.tags_frame.winfo_children():
-            widget.destroy()
+        self.exclude_dirs_entry.clear()
+        for i in reversed(range(self.tags_layout.count())):
+            widget = self.tags_layout.itemAt(i).widget()
+            if widget is not None:
+                widget.deleteLater()
         self.temp_extensions.clear()
         self.temp_exclude_dirs.clear()
         self.selected_project = None
