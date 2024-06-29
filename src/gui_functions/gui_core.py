@@ -13,7 +13,13 @@ class SourceCodePackerGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("源码打包工具")
-        self.root.geometry("1000x700")  # 初始大小适当调整
+
+        default_width = 900
+        default_height = 700
+        root.geometry(f"{default_width}x{default_height}")
+
+    # 设置最小尺寸
+        root.minsize(default_width, default_height)
 
         # 初始化样式
         apply_styles()
