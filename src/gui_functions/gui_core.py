@@ -8,14 +8,16 @@ from logger import ConsoleLogger
 from .extension_handling import initialize_extensions, add_extension
 from .layout_initializers import apply_styles, center_window, set_responsive_layout
 from .event_handlers import (
-    save_current_config,
-    load_project_config,
-    browse_project_path,
-    add_exclude_dir,
-    package_code,
-    delete_current_config,
-    reload_current_config,
-    export_current_config
+    save_current_config_handler,
+    load_project_config_handler,
+    browse_project_path_handler,
+    add_exclude_dir_handler,
+    package_code_handler,
+    delete_current_config_handler,
+    reload_current_config_handler,
+    export_current_config_handler,
+    import_config_handler,
+    show_current_config_handler
 )
 
 class SourceCodePackerGUI:
@@ -100,15 +102,21 @@ class SourceCodePackerGUI:
         config_buttons_frame = tk.Frame(self.bordered_frame)
         config_buttons_frame.grid(row=4, column=1, columnspan=2, padx=10, pady=5, sticky="we")
 
+        extra_buttons_frame = tk.Frame(self.bordered_frame)
+        extra_buttons_frame.grid(row=5, column=1, columnspan=2, padx=10, pady=5, sticky="we")
+
         tk.Button(config_buttons_frame, text="保存配置", command=self.save_current_config).pack(side=tk.LEFT, padx=5)
         tk.Button(config_buttons_frame, text="重载配置", command=self.reload_current_config).pack(side=tk.LEFT, padx=5)
         tk.Button(config_buttons_frame, text="删除配置", fg='red', command=self.delete_current_config).pack(side=tk.LEFT, padx=5)
-        tk.Button(config_buttons_frame, text="导出配置", fg='blue', command=self.export_current_config).pack(side=tk.LEFT, padx=5)
         tk.Button(config_buttons_frame, text="打包源码", default='active', command=self.package_code).pack(side=tk.RIGHT, padx=5)
+
+        tk.Button(extra_buttons_frame, text="导出配置", fg='blue', command=self.export_current_config).pack(side=tk.LEFT, padx=5)
+        tk.Button(extra_buttons_frame, text="导入配置", fg='blue', command=self.import_config).pack(side=tk.LEFT, padx=5)
+        tk.Button(extra_buttons_frame, text="查看配置", fg='green', command=self.show_current_config).pack(side=tk.LEFT, padx=5)
 
         # 日志显示区域
         self.log_display_frame = tk.Frame(self.root)
-        self.log_display_frame.grid(row=5, column=0, columnspan=3, padx=10, pady=5, sticky="nsew")
+        self.log_display_frame.grid(row=6, column=0, columnspan=3, padx=10, pady=5, sticky="nsew")
 
         log_display = scrolledtext.ScrolledText(self.log_display_frame, wrap=tk.WORD)
         log_display.pack(fill="both", expand=True)
@@ -117,7 +125,7 @@ class SourceCodePackerGUI:
 
         # 清除日志和退出程序按钮
         self.bottom_buttons_frame = tk.Frame(self.root)
-        self.bottom_buttons_frame.grid(row=6, column=0, columnspan=3, pady=10, sticky="we")
+        self.bottom_buttons_frame.grid(row=7, column=0, columnspan=3, pady=10, sticky="we")
 
         tk.Button(self.bottom_buttons_frame, text="清除日志", command=self.logger.clear).pack(side=tk.LEFT, padx=10, pady=5)
         tk.Button(self.bottom_buttons_frame, text="退出程序", fg='red', command=self.root.quit).pack(side=tk.RIGHT, padx=10, pady=5)
@@ -129,13 +137,13 @@ class SourceCodePackerGUI:
         center_window(self.root)
 
     def load_project_config(self, event=None):
-        load_project_config(self)
+        load_project_config_handler(self)
 
     def browse_project_path(self):
-        browse_project_path(self)
+        browse_project_path_handler(self)
 
     def add_exclude_dir(self):
-        add_exclude_dir(self)
+        add_exclude_dir_handler(self)
 
     def add_extension(self, extension):
         """处理添加文件扩展名的逻辑"""
@@ -146,20 +154,25 @@ class SourceCodePackerGUI:
             add_extension(self.root, self.tags_frame, extension, self.temp_extensions, self.tags_canvas, self.tags_scroll, self.extensions_var)
 
     def package_code(self):
-        package_code(self)
+        package_code_handler(self)
 
     def save_current_config(self):
-        save_current_config(self)
+        save_current_config_handler(self)
 
     def delete_current_config(self):
-        delete_current_config(self)
+        delete_current_config_handler(self)
 
     def reload_current_config(self):
-        reload_current_config(self)
-    
+        reload_current_config_handler(self)
 
     def export_current_config(self):
-        export_current_config(self)
+        export_current_config_handler(self)
+    
+    def import_config(self):
+        import_config_handler(self)
+    
+    def show_current_config(self):
+        show_current_config_handler(self)
 
     def load_project_details(self):
         """加载当前项目的详细信息"""

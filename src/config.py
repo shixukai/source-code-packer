@@ -80,3 +80,21 @@ def export_config(export_path):
     # Write to the specified export path
     with open(export_path, 'w') as export_file:
         export_file.write(config_data)
+
+def import_config(import_path):
+    with open(import_path, 'r', encoding='utf-8') as file:
+        imported_config = json.load(file)
+    
+    config_path = resource_path(DEFAULT_CONFIG_PATH)
+    with open(config_path, 'w', encoding='utf-8') as file:
+        json.dump(imported_config, file, indent=4)
+
+    return imported_config.get("projects", [])
+
+def show_current_config(logger):
+    config_path = resource_path(DEFAULT_CONFIG_PATH)
+    if not os.path.exists(config_path):
+        logger.write("配置文件不存在\n")
+    with open(config_path, 'r', encoding='utf-8') as file:
+        config = json.load(file)
+        logger.write(f"当前配置：\n{json.dumps(config, indent=4)}\n")
