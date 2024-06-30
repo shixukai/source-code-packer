@@ -59,7 +59,9 @@ def add_extension(root, layout, extension, extensions, canvas, entry_var, init=F
         QPushButton {
             background-color: #ffccbc;
             color: #d32f2f;
-            border: 1px solid #b71c1c;
+            border-top: 1px solid #b71c1c;
+            border-right: 1px solid #b71c1c;
+            border-bottom: 1px solid #b71c1c;
             border-top-right-radius: 3px;
             border-bottom-right-radius: 3px;
             font-size: 12px;

@@ -89,13 +89,9 @@ class SourceCodePackerGUI(QWidget):
         bordered_layout.addWidget(add_exclude_button, 1, 2)
 
         # 文件扩展名
-        bordered_layout.addWidget(QLabel("要打包的文件扩展名:"), 2, 0)
+        bordered_layout.addWidget(QLabel("已包含的扩展名:"), 2, 0)
         self.extensions_var = QLineEdit()
         extensions_entry = self.extensions_var
-        bordered_layout.addWidget(extensions_entry, 2, 1)
-        add_extension_button = create_styled_button("添加扩展名")
-        add_extension_button.clicked.connect(lambda: self.add_extension(extensions_entry.text()))
-        bordered_layout.addWidget(add_extension_button, 2, 2)
 
         # 用于展示扩展名标签的QScrollArea和QWidget
         self.tags_frame = QScrollArea()
@@ -109,7 +105,14 @@ class SourceCodePackerGUI(QWidget):
         self.tags_frame.setMaximumHeight(60)
         self.tags_frame.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tags_frame.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        bordered_layout.addWidget(self.tags_frame, 3, 0, 1, 3)  # 使其占据整行
+        bordered_layout.addWidget(self.tags_frame, 2, 1)  # 使其占据整行
+
+        bordered_layout.addWidget(QLabel("新增扩展名:"), 3, 0)
+        bordered_layout.addWidget(extensions_entry, 3, 1)
+        add_extension_button = create_styled_button("添加")
+        add_extension_button.clicked.connect(lambda: self.add_extension(extensions_entry.text()))
+        bordered_layout.addWidget(add_extension_button, 3, 2)
+
 
         # 初始化扩展名标签
         if self.selected_project:
