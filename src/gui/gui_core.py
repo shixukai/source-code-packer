@@ -71,7 +71,7 @@ class SourceCodePackerGUI(QWidget):
         bordered_frame.setMaximumHeight(fixed_height)
 
         # 项目选择
-        bordered_layout.addWidget(QLabel("项目路径:"), 0, 0)
+        bordered_layout.addWidget(QLabel("当前项目路径:"), 0, 0)
         
         self.project_path_combo = QComboBox()
         self.project_path_combo.addItems(self.project_paths)
@@ -79,7 +79,7 @@ class SourceCodePackerGUI(QWidget):
         self.project_path_combo.currentIndexChanged.connect(lambda: load_project_config_handler(self))
         bordered_layout.addWidget(self.project_path_combo, 0, 1)
         
-        browse_button = create_styled_button("选择")
+        browse_button = create_styled_button("修改")
         browse_button.clicked.connect(lambda: browse_project_path_handler(self))
         bordered_layout.addWidget(browse_button, 0, 2)
 
@@ -92,7 +92,7 @@ class SourceCodePackerGUI(QWidget):
         bordered_layout.addWidget(add_exclude_button, 1, 2)
 
         # 文件扩展名
-        bordered_layout.addWidget(QLabel("已包含的扩展名:"), 2, 0)
+        bordered_layout.addWidget(QLabel("包含的扩展名:"), 2, 0)
         self.extensions_var = QLineEdit()
         extensions_entry = self.extensions_var
 
