@@ -19,9 +19,14 @@ def load_project_config_handler(gui):
             return  # 找到匹配的项目后立即返回
 
     # 如果未找到项目配置，则设置为临时状态
-    gui.selected_project = None
+    gui.selected_project = {
+        "project_path": selected_path,
+        "file_extensions": gui.temp_extensions,
+        "exclude_dirs": gui.temp_exclude_dirs
+    }
     gui.temp_extensions = []
     gui.temp_exclude_dirs = []
+
 
 def browse_project_path_handler(gui):
     """浏览选择项目路径"""
@@ -29,19 +34,26 @@ def browse_project_path_handler(gui):
     initial_dir = os.path.dirname(current_path) if current_path else os.path.expanduser("~")
     selected_dir = QFileDialog.getExistingDirectory(caption="选择项目路径", directory=initial_dir)
     if selected_dir:
+        # 更新项目路径组合框并加载新路径的配置
+        if selected_dir not in gui.project_paths:
+            gui.project_paths.append(selected_dir)
+            gui.project_path_combo.addItem(selected_dir)
+        
         gui.project_path_combo.setCurrentText(selected_dir)
-        # 清空显示的当前配置
+        
+        # 确保 selected_project 被正确初始化
+        gui.selected_project = {
+            "project_path": selected_dir,
+            "file_extensions": gui.temp_extensions,
+            "exclude_dirs": gui.temp_exclude_dirs
+        }
+        
+        gui.temp_extensions = []
+        gui.temp_exclude_dirs = []
+        
         gui.clear_current_config()
-        # 检查该路径是否在现有配置中
-        gui.selected_project = None
-        for project in gui.projects:
-            if project["project_path"] == selected_dir:
-                gui.selected_project = project
-                gui.load_project_details()
-                break
-        if gui.selected_project is None:
-            gui.temp_extensions = []
-            gui.temp_exclude_dirs = []
+        gui.load_project_details()
+
 
 def add_exclude_dir_handler(gui):
     """添加排除目录"""
@@ -52,22 +64,26 @@ def add_exclude_dir_handler(gui):
 def package_code_handler(gui):
     """处理打包按钮的点击事件"""
     project_path = gui.project_path_combo.currentText().strip()
+
     if not project_path:
         QMessageBox.critical(gui, "错误", "请先选择或配置一个项目路径")
         return
+    
+    project = {
+        "project_path": project_path,
+        "file_extensions": gui.temp_extensions,
+        "exclude_dirs": [d.strip() for d in gui.exclude_dirs_entry.text().split(";") if d.strip()]
+    }
 
     if gui.selected_project:
-        extensions = gui.selected_project["file_extensions"]
-    else:
-        extensions = gui.temp_extensions
+        project = gui.selected_project
 
-    if not extensions:
+    if not project["file_extensions"]:
         QMessageBox.critical(gui, "错误", "请先添加至少一个文件扩展名")
         return
 
-    exclude_dirs = [d.strip() for d in gui.exclude_dirs_entry.text().split(";") if d.strip()]
+    on_package_button_click(gui, project, gui.logger)
 
-    on_package_button_click(gui, project_path, gui.selected_project, exclude_dirs, gui.logger)
 
 def save_current_config_handler(gui):
     """保存当前项目配置到config.json"""

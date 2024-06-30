@@ -10,12 +10,16 @@ from .validate_exclude_dir import validate_exclude_dir, InvalidSubdirectoryExcep
 from packager import run_packaging
 import platform
 
-def on_package_button_click(root, project_path, selected_project, exclude_dirs, logger):
+def on_package_button_click(root, project, logger):
     """
     处理打包按钮的点击事件。
     """
-    updated_project_path = project_path.strip()
-    valid_extensions = [ext.strip() for ext in selected_project["file_extensions"]]
+    if not project["project_path"]:
+        QMessageBox.critical(root, "错误", "未选择有效的项目路径。")
+        return
+
+    updated_project_path = project.get("project_path").strip()
+    valid_extensions = [ext.strip() for ext in project.get("file_extensions", [])]
 
     if not updated_project_path:
         QMessageBox.critical(root, "错误", "项目路径不能为空")
@@ -24,7 +28,7 @@ def on_package_button_click(root, project_path, selected_project, exclude_dirs, 
     # 检查每个排除目录是否有效
     valid_exclude_dirs = []
     try:
-        for sub_dir in exclude_dirs:
+        for sub_dir in project.get("exclude_dirs", []):
             validate_exclude_dir(sub_dir, updated_project_path)
             valid_exclude_dirs.append(sub_dir)
     except InvalidSubdirectoryException as e:
@@ -36,11 +40,8 @@ def on_package_button_click(root, project_path, selected_project, exclude_dirs, 
 
     result_queue = queue.Queue()
 
-    # 使用传递的 selected_project 来确保使用当前选择的项目配置
-    current_extensions = selected_project["file_extensions"]
-
     # 启动一个新线程来执行打包过程
-    threading.Thread(target=run_packaging, args=(updated_project_path, current_extensions, valid_exclude_dirs, result_queue)).start()
+    threading.Thread(target=run_packaging, args=(updated_project_path, valid_extensions, valid_exclude_dirs, result_queue)).start()
 
     def check_result():
         try:
@@ -98,6 +99,7 @@ def on_package_button_click(root, project_path, selected_project, exclude_dirs, 
 
     # 开始检查结果
     QTimer.singleShot(100, check_result)
+
 
 def open_and_select_file(file_path):
     """
