@@ -10,9 +10,9 @@ from PyQt5.QtGui import QCursor, QFontMetrics, QDragEnterEvent, QDropEvent
 
 from config import read_config
 from logger import ConsoleLogger
-from .extension_handling import initialize_extensions, add_extension
-from .layout_initializers import apply_styles, center_window, set_responsive_layout, create_styled_button
-from .event_handlers import (
+from gui_functions.extension_handlers import initialize_extensions, add_extension
+from gui.layout_initializers import apply_styles, center_window, set_responsive_layout, create_styled_button
+from gui_functions.event_handlers import (
     save_current_config_handler,
     load_project_config_handler,
     browse_project_path_handler,
@@ -24,6 +24,7 @@ from .event_handlers import (
     import_config_handler,
     show_current_config_handler
 )
+from gui_functions.open_directory import open_directory
 
 class SourceCodePackerGUI(QWidget):
     def __init__(self):
@@ -252,10 +253,4 @@ class SourceCodePackerGUI(QWidget):
     def open_folder(self):
         """打开当前所选项目路径"""
         project_path = self.project_path_combo.currentText().strip()
-        if project_path and os.path.exists(project_path):
-            if os.name == 'nt':  # Windows
-                os.startfile(project_path)
-            elif os.name == 'posix':  # macOS, Linux
-                subprocess.run(['open' if sys.platform == 'darwin' else 'xdg-open', project_path])
-        else:
-            self.logger.write(f"项目路径不存在: {project_path}")
+        open_directory(project_path, self.logger)

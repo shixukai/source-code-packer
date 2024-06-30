@@ -3,8 +3,8 @@
 import os
 from PyQt5.QtWidgets import QMessageBox, QFileDialog
 
-from .extension_handling import add_extension, initialize_extensions
-from .exclude_handling import add_exclude_dir as add_exclude_dir_to_gui
+from .extension_handlers import add_extension, initialize_extensions
+from .exclude_handlers import add_exclude_dir as add_exclude_dir_to_gui
 from .packaging_handling import on_package_button_click
 from config import save_config, delete_config, read_config, export_config, import_config, show_current_config
 
