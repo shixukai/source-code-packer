@@ -54,6 +54,7 @@ class SourceCodePackerGUI(QWidget):
         # 创建GUI
         self.create_widgets()
 
+
     def create_widgets(self):
         layout = QVBoxLayout()
 
@@ -100,6 +101,7 @@ class SourceCodePackerGUI(QWidget):
         self.tags_frame = QScrollArea()
         self.tags_widget = QWidget()
         self.tags_layout = QHBoxLayout(self.tags_widget)  # 使用 QHBoxLayout 以确保标签水平排列
+        self.tags_layout.setAlignment(Qt.AlignLeft)  # 确保标签靠左对齐
         self.tags_widget.setLayout(self.tags_layout)
         self.tags_frame.setWidget(self.tags_widget)
         self.tags_frame.setWidgetResizable(True)
@@ -107,7 +109,7 @@ class SourceCodePackerGUI(QWidget):
         self.tags_frame.setMaximumHeight(60)
         self.tags_frame.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tags_frame.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        bordered_layout.addWidget(self.tags_frame, 3, 0, 1, 3)
+        bordered_layout.addWidget(self.tags_frame, 3, 0, 1, 3)  # 使其占据整行
 
         # 初始化扩展名标签
         if self.selected_project:
@@ -193,6 +195,8 @@ class SourceCodePackerGUI(QWidget):
 
         # 将窗口居中显示
         center_window(self)
+
+
 
     def add_extension(self, extension):
         """处理添加文件扩展名的逻辑"""
