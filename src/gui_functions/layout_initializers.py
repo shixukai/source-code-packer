@@ -50,6 +50,20 @@ def create_styled_button(text, color="default"):
                 color: darkred;
             }
         """)
+    elif color == "red-bg":
+        button.setStyleSheet("""
+            QPushButton {
+                background-color: #d32f2f;
+                color: white;
+                border: 1px solid #b71c1c;
+                padding: 5px 10px;
+                border-radius: 5px;
+            }
+            QPushButton:pressed {
+                background-color: #b71c1c;
+                border: 1px solid #7f0000;
+            }
+        """)
     else:
         button.setStyleSheet("""
             QPushButton {

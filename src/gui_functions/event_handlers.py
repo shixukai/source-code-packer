@@ -136,7 +136,7 @@ def delete_current_config_handler(gui):
     gui.project_path_combo.addItems(gui.project_paths)
     if gui.project_paths:
         gui.project_path_combo.setCurrentIndex(0)  # 选择第一个项目路径
-        gui.load_project_config()
+        load_project_config_handler(gui)
     else:
         gui.project_path_combo.clear()
         gui.clear_current_config()
@@ -196,7 +196,7 @@ def import_config_handler(gui):
 
         if gui.project_paths:
             gui.project_path_combo.setCurrentIndex(0)  # 默认选择第一个项目路径
-            gui.load_project_config()
+            load_project_config_handler(gui)
         else:
             gui.clear_current_config()
 

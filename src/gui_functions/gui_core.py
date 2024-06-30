@@ -133,7 +133,7 @@ class SourceCodePackerGUI(QWidget):
         reload_button.clicked.connect(lambda: reload_current_config_handler(self))
         config_buttons_layout.addWidget(reload_button)
 
-        delete_button = create_styled_button("删除配置", "red")
+        delete_button = create_styled_button("删除配置", "red-bg")
         delete_button.clicked.connect(lambda: delete_current_config_handler(self))
         config_buttons_layout.addWidget(delete_button)
 
