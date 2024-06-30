@@ -30,12 +30,12 @@ def add_extension(root, layout, extension, extensions, canvas, entry_var, init=F
 
     # 创建标签
     label = QLabel(extension)
-    label.setFixedHeight(25)
+    label.setFixedHeight(20)
     label.setStyleSheet("""
         QLabel {
             background-color: #e0f7fa;
             color: #00796b;
-            padding: 3px;
+            padding: 2px;
             border: 1px solid #004d40;
             border-top-left-radius: 3px;
             border-bottom-left-radius: 3px;
@@ -53,7 +53,7 @@ def add_extension(root, layout, extension, extensions, canvas, entry_var, init=F
 
     # 创建删除按钮
     delete_btn = QPushButton('✕')
-    delete_btn.setFixedHeight(25)
+    delete_btn.setFixedHeight(20)
     delete_btn.setFixedWidth(25)
     delete_btn.setStyleSheet("""
         QPushButton {

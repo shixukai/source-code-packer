@@ -1,6 +1,6 @@
-# gui_core.py
-
 import os
+import sys
+import subprocess  # 用于打开文件浏览器
 from PyQt5.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox,
     QLineEdit, QTextEdit, QFrame, QScrollArea, QGridLayout, QGroupBox
@@ -78,7 +78,7 @@ class SourceCodePackerGUI(QWidget):
         self.project_path_combo.currentIndexChanged.connect(lambda: load_project_config_handler(self))
         bordered_layout.addWidget(self.project_path_combo, 0, 1)
         
-        browse_button = create_styled_button("浏览")
+        browse_button = create_styled_button("选择")
         browse_button.clicked.connect(lambda: browse_project_path_handler(self))
         bordered_layout.addWidget(browse_button, 0, 2)
 
@@ -103,8 +103,8 @@ class SourceCodePackerGUI(QWidget):
         self.tags_widget.setLayout(self.tags_layout)
         self.tags_frame.setWidget(self.tags_widget)
         self.tags_frame.setWidgetResizable(True)
-        self.tags_frame.setMinimumHeight(60)
-        self.tags_frame.setMaximumHeight(60)
+        self.tags_frame.setMinimumHeight(55)
+        self.tags_frame.setMaximumHeight(55)
         self.tags_frame.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tags_frame.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         bordered_layout.addWidget(self.tags_frame, 2, 1)  # 使其占据整行
@@ -135,14 +135,21 @@ class SourceCodePackerGUI(QWidget):
         reload_button.clicked.connect(lambda: reload_current_config_handler(self))
         config_buttons_layout.addWidget(reload_button)
 
-        delete_button = create_styled_button("删除配置", "red-bg")
-        delete_button.clicked.connect(lambda: delete_current_config_handler(self))
-        config_buttons_layout.addWidget(delete_button)
+        show_button = create_styled_button("查看配置")
+        show_button.clicked.connect(lambda: show_current_config_handler(self))
+        config_buttons_layout.addWidget(show_button)
+
+        # 添加打开文件浏览器按钮
+        open_folder_button = create_styled_button("浏览项目", "blue-bg")
+        open_folder_button.clicked.connect(lambda: self.open_folder())
+        config_buttons_layout.addWidget(open_folder_button, alignment=Qt.AlignRight)
 
         # 添加打包按钮
         package_button = create_styled_button("打包源码", "green")
         package_button.clicked.connect(lambda: package_code_handler(self))
-        config_buttons_layout.addWidget(package_button, alignment=Qt.AlignRight)
+        config_buttons_layout.addWidget(package_button)
+
+
 
         layout.addWidget(config_buttons_frame)
 
@@ -159,9 +166,10 @@ class SourceCodePackerGUI(QWidget):
         import_button.clicked.connect(lambda: import_config_handler(self))
         extra_buttons_layout.addWidget(import_button)
 
-        show_button = create_styled_button("查看配置")
-        show_button.clicked.connect(lambda: show_current_config_handler(self))
-        extra_buttons_layout.addWidget(show_button)
+        delete_button = create_styled_button("删除配置", "red-bg")
+        delete_button.clicked.connect(lambda: delete_current_config_handler(self))
+        extra_buttons_layout.addWidget(delete_button)
+
 
         layout.addWidget(extra_buttons_frame, alignment=Qt.AlignLeft)
 
@@ -240,3 +248,14 @@ class SourceCodePackerGUI(QWidget):
         self.temp_extensions.clear()
         self.temp_exclude_dirs.clear()
         self.selected_project = None
+
+    def open_folder(self):
+        """打开当前所选项目路径"""
+        project_path = self.project_path_combo.currentText().strip()
+        if project_path and os.path.exists(project_path):
+            if os.name == 'nt':  # Windows
+                os.startfile(project_path)
+            elif os.name == 'posix':  # macOS, Linux
+                subprocess.run(['open' if sys.platform == 'darwin' else 'xdg-open', project_path])
+        else:
+            self.logger.write(f"项目路径不存在: {project_path}")
