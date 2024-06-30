@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (
     QLineEdit, QTextEdit, QFrame, QScrollArea, QGridLayout, QGroupBox
 )
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QCursor, QFontMetrics
+from PyQt5.QtGui import QCursor, QFontMetrics, QDragEnterEvent, QDropEvent
 
 from config import read_config
 from logger import ConsoleLogger
@@ -54,6 +54,8 @@ class SourceCodePackerGUI(QWidget):
         # 创建GUI
         self.create_widgets()
 
+        # 设置拖放功能
+        self.setAcceptDrops(True)
 
     def create_widgets(self):
         layout = QVBoxLayout()
@@ -199,7 +201,18 @@ class SourceCodePackerGUI(QWidget):
         # 将窗口居中显示
         center_window(self)
 
+    def dragEnterEvent(self, event: QDragEnterEvent):
+        """处理拖入事件"""
+        if event.mimeData().hasUrls():
+            event.acceptProposedAction()
 
+    def dropEvent(self, event: QDropEvent):
+        """处理文件放下事件"""
+        urls = event.mimeData().urls()
+        if urls:
+            file_paths = [url.toLocalFile() for url in urls]
+            self.logger.write("拖入的文件/文件夹:\n" + "\n".join(file_paths))
+        event.acceptProposedAction()
 
     def add_extension(self, extension):
         """处理添加文件扩展名的逻辑"""
