@@ -1,15 +1,13 @@
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox,
-    QLineEdit, QTextEdit, QFrame, QScrollArea, QGridLayout, QGroupBox
+    QWidget, QVBoxLayout
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QDragEnterEvent, QDropEvent
 
-from logger import ConsoleLogger, SingletonQTextEditManager
 
-from gui.layout_initializers import apply_styles, center_window, set_responsive_layout, create_styled_button
-from gui.gui_pro_info import ProjectInfoWidget
+from gui.layout_initializers import apply_styles, center_window, set_responsive_layout
 
+from di_container import DIContainer
 class SourceCodePackerGUI(QWidget):
     def __init__(self):
         super().__init__()
@@ -32,36 +30,19 @@ class SourceCodePackerGUI(QWidget):
         # 设置拖放功能
         self.setAcceptDrops(True)
 
-    def create_widgets(self):
+    def create_set_layout(self):
+        di_container = DIContainer()
+
         layout = self.layout
 
-        # 日志显示区域
-        log_display_frame = QFrame()
-        log_display_layout = QVBoxLayout()
-        log_display_frame.setLayout(log_display_layout)
+        project_info_widget = di_container.resolve("project_info_widget")
+        log_display = di_container.resolve("log_display")
 
-        log_display = SingletonQTextEditManager.get_instance()
-        log_display.setReadOnly(True)
-        log_display.setLineWrapMode(QTextEdit.WidgetWidth)
-        log_display_layout.addWidget(log_display)
-
-        self.logger = ConsoleLogger()
-
-        layout.addWidget(log_display_frame)
-
-        # 清除日志和退出程序按钮
-        bottom_buttons_frame = QFrame()
-        bottom_buttons_layout = QHBoxLayout(bottom_buttons_frame)
-        
-        clear_log_button = create_styled_button("清除日志")
-        clear_log_button.clicked.connect(self.logger.clear)
-        bottom_buttons_layout.addWidget(clear_log_button, alignment=Qt.AlignLeft)
-
-        exit_button = create_styled_button("退出程序", "red")
-        exit_button.clicked.connect(self.close)
-        bottom_buttons_layout.addWidget(exit_button, alignment=Qt.AlignRight)
-
-        layout.addWidget(bottom_buttons_frame)
+        layout.addWidget(project_info_widget.project_info_frame, alignment=Qt.AlignBottom)
+        layout.addWidget(project_info_widget.config_buttons_frame, alignment=Qt.AlignBottom)
+        layout.addWidget(project_info_widget.extra_buttons_frame, alignment=Qt.AlignLeft)
+        layout.addWidget(log_display.log_display_frame, alignment=Qt.AlignBottom)
+        layout.addWidget(log_display.bottom_buttons_frame, alignment=Qt.AlignBottom)
 
         self.setLayout(layout)
 
@@ -80,8 +61,9 @@ class SourceCodePackerGUI(QWidget):
         """处理文件放下事件"""
         urls = event.mimeData().urls()
         if urls:
+            logger = DIContainer().resolve("logger")
             file_paths = [url.toLocalFile() for url in urls]
-            self.logger.write("拖入的文件/文件夹:\n" + "\n".join(file_paths))
+            logger.write("拖入的文件/文件夹:\n" + "\n".join(file_paths))
         event.acceptProposedAction()
 
 

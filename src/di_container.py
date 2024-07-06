@@ -48,12 +48,12 @@ class DIContainer(metaclass=SingletonMeta):
     def _resolve_class(self, cls):
         """解析类依赖"""
         constructor = cls.__init__
-        if constructor is object.__init__:
+        if constructor is object.__init__ or not hasattr(constructor, '__code__'):
             return cls()
-        
+
         param_names = constructor.__code__.co_varnames[1:constructor.__code__.co_argcount]
         dependencies = [self.resolve(name) for name in param_names]
-        
+
         return cls(*dependencies)
 
     def clear(self):

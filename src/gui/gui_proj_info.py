@@ -1,13 +1,12 @@
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QComboBox,
-    QLineEdit, QTextEdit, QFrame, QScrollArea, QGridLayout, QGroupBox
+    QWidget, QHBoxLayout, QLabel, QComboBox,
+    QLineEdit, QFrame, QScrollArea, QGridLayout, QGroupBox
 )
 
-from gui.layout_initializers import apply_styles, center_window, set_responsive_layout, create_styled_button
+from gui.layout_initializers import create_styled_button
 from config import read_config
-from logger import ConsoleLogger
 from gui_functions.event_handlers import (
     save_current_config_handler,
     load_project_config_handler,
@@ -28,9 +27,6 @@ class ProjectInfoWidget:
     def __init__(self):
         self.gui_core = None
 
-        self.project_info_frame = None
-        self.project_info_layout = None
-
         # 读取配置
         self.projects = read_config()
         self.project_paths = [project["project_path"] for project in self.projects]
@@ -43,20 +39,32 @@ class ProjectInfoWidget:
         self.temp_exclude_dirs = []
 
         self.project_path_combo = QComboBox()
+
+        self.project_info_frame = QGroupBox()
+
+        self.config_buttons_frame = QFrame()
+        self.extra_buttons_frame = QFrame()
+
+        self.exclude_dirs_entry = QLineEdit()
+        self.extensions_var = QLineEdit()
+
+        self.tags_frame = QScrollArea()
+        self.tags_widget = QWidget()
+        self.tags_layout = QHBoxLayout(self.tags_widget)  # 使用 QHBoxLayout 以确保标签水平排列
+
+
+        self.logger = DIContainer().resolve("logger")
+
+    def create_widgets(self):
+        self.gui_core = DIContainer().resolve("gui_core")
+
         self.project_path_combo.addItems(self.project_paths)
         self.project_path_combo.setCurrentIndex(0)
         self.project_path_combo.currentIndexChanged.connect(lambda: load_project_config_handler(self))
 
-        self.logger = ConsoleLogger()
-
-    def create_widgets(self):
-        self.gui_core = DIContainer().resolve("gui_core")
-        layout = self.gui_core.layout
-
         # 创建带边框的Frame用于包含项目配置的各个控件
-        self.project_info_frame = QGroupBox()
-        self.project_info_layout = QGridLayout()
-        self.project_info_frame.setLayout(self.project_info_layout)
+        project_info_layout = QGridLayout()
+        self.project_info_frame.setLayout(project_info_layout)
 
         fixed_height = 260
 
@@ -64,30 +72,25 @@ class ProjectInfoWidget:
         self.project_info_frame.setMaximumHeight(fixed_height)
 
         # 项目选择
-        self.project_info_layout.addWidget(QLabel("项目路径:"), 0, 0)
-        self.project_info_layout.addWidget(self.project_path_combo, 0, 1)
+        project_info_layout.addWidget(QLabel("项目路径:"), 0, 0)
+        project_info_layout.addWidget(self.project_path_combo, 0, 1)
 
         browse_button = create_styled_button("修改")
         browse_button.clicked.connect(lambda: browse_project_path_handler(self))
-        self.project_info_layout.addWidget(browse_button, 0, 2)
+        project_info_layout.addWidget(browse_button, 0, 2)
 
         # 排除目录
-        self.project_info_layout.addWidget(QLabel("排除的子目录:"), 1, 0)
-        self.exclude_dirs_entry = QLineEdit()
-        self.project_info_layout.addWidget(self.exclude_dirs_entry, 1, 1)
+        project_info_layout.addWidget(QLabel("排除的子目录:"), 1, 0)
+        project_info_layout.addWidget(self.exclude_dirs_entry, 1, 1)
         add_exclude_button = create_styled_button("添加")
         add_exclude_button.clicked.connect(lambda: add_exclude_dir_handler(self))
-        self.project_info_layout.addWidget(add_exclude_button, 1, 2)
+        project_info_layout.addWidget(add_exclude_button, 1, 2)
 
         # 文件扩展名
-        self.project_info_layout.addWidget(QLabel("包含的扩展名:"), 2, 0)
-        self.extensions_var = QLineEdit()
+        project_info_layout.addWidget(QLabel("包含的扩展名:"), 2, 0)
         extensions_entry = self.extensions_var
 
          # 用于展示扩展名标签的QScrollArea和QWidget
-        self.tags_frame = QScrollArea()
-        self.tags_widget = QWidget()
-        self.tags_layout = QHBoxLayout(self.tags_widget)  # 使用 QHBoxLayout 以确保标签水平排列
         self.tags_layout.setAlignment(Qt.AlignLeft)  # 确保标签靠左对齐
         self.tags_widget.setLayout(self.tags_layout)
         self.tags_frame.setWidget(self.tags_widget)
@@ -96,23 +99,20 @@ class ProjectInfoWidget:
         self.tags_frame.setMaximumHeight(55)
         self.tags_frame.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.tags_frame.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.project_info_layout.addWidget(self.tags_frame, 2, 1)  # 使其占据整行
+        project_info_layout.addWidget(self.tags_frame, 2, 1)  # 使其占据整行
 
-        self.project_info_layout.addWidget(QLabel("新增扩展名:"), 3, 0)
-        self.project_info_layout.addWidget(extensions_entry, 3, 1)
+        project_info_layout.addWidget(QLabel("新增扩展名:"), 3, 0)
+        project_info_layout.addWidget(extensions_entry, 3, 1)
         add_extension_button = create_styled_button("添加")
         add_extension_button.clicked.connect(lambda: self.add_extension(extensions_entry.text()))
-        self.project_info_layout.addWidget(add_extension_button, 3, 2)
-
-        layout.addWidget(self.project_info_frame)
+        project_info_layout.addWidget(add_extension_button, 3, 2)
 
         # 初始化扩展名标签
         if self.selected_project:
             self.load_project_details()
 
         # 添加保存、重载、删除配置按钮
-        config_buttons_frame = QFrame()
-        config_buttons_layout = QHBoxLayout(config_buttons_frame)
+        config_buttons_layout = QHBoxLayout(self.config_buttons_frame)
         config_buttons_layout.setSpacing(10)
         
         save_button = create_styled_button("保存配置")
@@ -137,11 +137,8 @@ class ProjectInfoWidget:
         package_button.clicked.connect(lambda: package_code_handler(self))
         config_buttons_layout.addWidget(package_button)
 
-        layout.addWidget(config_buttons_frame)
-
         # 添加导出、导入和查看配置按钮
-        extra_buttons_frame = QFrame()
-        extra_buttons_layout = QHBoxLayout(extra_buttons_frame)
+        extra_buttons_layout = QHBoxLayout(self.extra_buttons_frame)
         extra_buttons_layout.setSpacing(10)
         
         export_button = create_styled_button("导出配置")
@@ -155,8 +152,6 @@ class ProjectInfoWidget:
         delete_button = create_styled_button("删除配置", "red-bg")
         delete_button.clicked.connect(lambda: delete_current_config_handler(self))
         extra_buttons_layout.addWidget(delete_button)
-
-        layout.addWidget(extra_buttons_frame, alignment=Qt.AlignLeft)
 
     def open_folder(self):
         """打开当前所选项目路径"""
