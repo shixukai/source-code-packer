@@ -54,8 +54,9 @@ def browse_project_path_handler(gui):
         gui.load_project_details()
 
 
-def add_exclude_dir_handler(gui_core, gui):
+def add_exclude_dir_handler(gui):
     """添加排除目录"""
+    gui_core = DIContainer().resolve("gui_core")
     add_exclude_dir(gui_core, gui.project_path_combo, gui.exclude_dirs_entry)
     if not gui.selected_project:
         gui.temp_exclude_dirs = [d.strip() for d in gui.exclude_dirs_entry.text().split(";") if d.strip()]
@@ -89,7 +90,6 @@ def package_code_handler(gui):
 def save_current_config_handler(gui):
     """保存当前项目配置到config.json"""
     gui_core = DIContainer().resolve("gui_core")
-
     project_path = gui.project_path_combo.currentText().strip()
 
     # 检查项目路径是否为空

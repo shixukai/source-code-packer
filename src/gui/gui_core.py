@@ -38,11 +38,8 @@ class SourceCodePackerGUI(QWidget):
         project_info_widget = di_container.resolve("project_info_widget")
         log_display = di_container.resolve("log_display")
 
-        layout.addWidget(project_info_widget.project_info_frame, alignment=Qt.AlignBottom)
-        layout.addWidget(project_info_widget.config_buttons_frame, alignment=Qt.AlignBottom)
-        layout.addWidget(project_info_widget.extra_buttons_frame, alignment=Qt.AlignLeft)
-        layout.addWidget(log_display.log_display_frame, alignment=Qt.AlignBottom)
-        layout.addWidget(log_display.bottom_buttons_frame, alignment=Qt.AlignBottom)
+        layout.addWidget(project_info_widget.project_info_frame, alignment=Qt.AlignTop)
+        layout.addWidget(log_display.log_display_main_frame)
 
         self.setLayout(layout)
 

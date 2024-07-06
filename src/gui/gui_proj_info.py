@@ -42,8 +42,6 @@ class ProjectInfoWidget:
 
         self.project_info_frame = QGroupBox()
 
-        self.config_buttons_frame = QFrame()
-        self.extra_buttons_frame = QFrame()
 
         self.exclude_dirs_entry = QLineEdit()
         self.extensions_var = QLineEdit()
@@ -66,7 +64,7 @@ class ProjectInfoWidget:
         project_info_layout = QGridLayout()
         self.project_info_frame.setLayout(project_info_layout)
 
-        fixed_height = 260
+        fixed_height = 340
 
         self.project_info_frame.setMinimumHeight(fixed_height)
         self.project_info_frame.setMaximumHeight(fixed_height)
@@ -111,9 +109,13 @@ class ProjectInfoWidget:
         if self.selected_project:
             self.load_project_details()
 
+        config_buttons_frame = QFrame()
+        # config_buttons_frame.setStyleSheet("background-color: red;")
+
         # 添加保存、重载、删除配置按钮
-        config_buttons_layout = QHBoxLayout(self.config_buttons_frame)
-        config_buttons_layout.setSpacing(10)
+        config_buttons_layout = QHBoxLayout(config_buttons_frame)
+        config_buttons_layout.setContentsMargins(0, 0, 0, 0)  # 设置左、上、右、下边距均为0
+
         
         save_button = create_styled_button("保存配置")
         save_button.clicked.connect(lambda: save_current_config_handler(self))
@@ -137,9 +139,13 @@ class ProjectInfoWidget:
         package_button.clicked.connect(lambda: package_code_handler(self))
         config_buttons_layout.addWidget(package_button)
 
+        project_info_layout.addWidget(config_buttons_frame, 4, 0, 1, 3)
+
         # 添加导出、导入和查看配置按钮
-        extra_buttons_layout = QHBoxLayout(self.extra_buttons_frame)
-        extra_buttons_layout.setSpacing(10)
+        extra_buttons_frame = QFrame()
+        extra_buttons_layout = QHBoxLayout(extra_buttons_frame)
+        extra_buttons_layout.setContentsMargins(0, 0, 0, 0)  # 设置左、上、右、下边距均为0
+        # extra_buttons_layout.setSpacing(10)
         
         export_button = create_styled_button("导出配置")
         export_button.clicked.connect(lambda: export_current_config_handler(self))
@@ -152,6 +158,7 @@ class ProjectInfoWidget:
         delete_button = create_styled_button("删除配置", "red-bg")
         delete_button.clicked.connect(lambda: delete_current_config_handler(self))
         extra_buttons_layout.addWidget(delete_button)
+        project_info_layout.addWidget(extra_buttons_frame, 5, 0, 1, 3, alignment=Qt.AlignTop | Qt.AlignLeft)
 
     def open_folder(self):
         """打开当前所选项目路径"""
