@@ -1,22 +1,24 @@
 from PyQt5.QtWidgets import QWidget, QMessageBox, QHBoxLayout, QLabel, QPushButton, QScrollArea, QFrame, QSizePolicy
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFontMetrics
+from di_container import DIContainer
 
-def add_extension(root, layout, extension, extensions, canvas, entry_var, init=False):
+def add_extension(root, display_layout, extension, extensions, canvas, entry_var, init=False):
     """
     添加新的文件扩展名并以标签形式展示。
     """
+    gui_core = DIContainer().resolve("gui_core")
     extension = extension.strip()  # 去除可能的空格
 
     if not extension:
-        QMessageBox.critical(root, "错误", "扩展名不能为空或仅包含空格")
+        QMessageBox.critical(gui_core, "错误", "扩展名不能为空或仅包含空格")
         return
 
     if not extension.startswith('.'):
         extension = f'.{extension}'  # 自动补全扩展名前的点
 
     if not init and extension in extensions:
-        QMessageBox.information(root, "提示", f"扩展名 '{extension}' 已存在")
+        QMessageBox.information(gui_core, "提示", f"扩展名 '{extension}' 已存在")
         return  # 避免重复添加相同的扩展名
 
     if not init:
@@ -75,13 +77,13 @@ def add_extension(root, layout, extension, extensions, canvas, entry_var, init=F
 
     tag_widget.setLayout(tag_layout)
     tag_widget.setFixedHeight(25)
-    layout.addWidget(tag_widget, 0, Qt.AlignLeft)
+    display_layout.addWidget(tag_widget, 0, Qt.AlignLeft)
 
     # 设置固定的标签间距
-    layout.setSpacing(10)
+    display_layout.setSpacing(10)
 
     # 更新标签显示区域
-    update_canvas(root, layout, canvas)
+    update_canvas(display_layout, canvas)
 
     # 清空输入框内容
     if not init:
@@ -91,14 +93,15 @@ def remove_extension(root, tag_widget, extension, extensions, canvas):
     """
     删除标签形式的文件扩展名。
     """
+    gui_core = DIContainer().resolve("gui_core")
     if extension in extensions:
         extensions.remove(extension)
         tag_widget.deleteLater()
-        update_canvas(root, tag_widget.parentWidget().layout(), canvas)
+        update_canvas(tag_widget.parentWidget().layout(), canvas)
     else:
-        QMessageBox.critical(root, "错误", f"扩展名 '{extension}' 不存在")
+        QMessageBox.critical(gui_core, "错误", f"扩展名 '{extension}' 不存在")
 
-def update_canvas(root, layout, canvas):
+def update_canvas(layout, canvas):
     """
     更新标签显示区域的大小。
     """
@@ -113,5 +116,6 @@ def initialize_extensions(root, layout, extensions, canvas, entry_var):
     """
     初始化显示默认的文件扩展名。
     """
+    gui_core = DIContainer().resolve("gui_core")
     for ext in extensions:
-        add_extension(root, layout, ext, extensions, canvas, entry_var, init=True)
+        add_extension(gui_core, layout, ext, extensions, canvas, entry_var, init=True)

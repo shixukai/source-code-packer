@@ -9,20 +9,22 @@ from .open_directory import open_directory
 from .validate_exclude_dir import validate_exclude_dir, InvalidSubdirectoryException
 from packager import run_packaging
 import platform
+from di_container import DIContainer
 
 def on_package_button_click(root, project, logger):
     """
     处理打包按钮的点击事件。
     """
+    gui_core = DIContainer().resolve("gui_core")
     if not project["project_path"]:
-        QMessageBox.critical(root, "错误", "未选择有效的项目路径。")
+        QMessageBox.critical(gui_core, "错误", "未选择有效的项目路径。")
         return
 
     updated_project_path = project.get("project_path").strip()
     valid_extensions = [ext.strip() for ext in project.get("file_extensions", [])]
 
     if not updated_project_path:
-        QMessageBox.critical(root, "错误", "项目路径不能为空")
+        QMessageBox.critical(gui_core, "错误", "项目路径不能为空")
         return
 
     # 检查每个排除目录是否有效
@@ -32,7 +34,7 @@ def on_package_button_click(root, project, logger):
             validate_exclude_dir(sub_dir, updated_project_path)
             valid_exclude_dirs.append(sub_dir)
     except InvalidSubdirectoryException as e:
-        QMessageBox.critical(root, "错误", str(e))
+        QMessageBox.critical(gui_core, "错误", str(e))
         return  # 如果有任何一个目录无效，停止打包操作
 
     logger.clear()
@@ -50,7 +52,7 @@ def on_package_button_click(root, project, logger):
             logger.write(result_message + "\n")
             if output_path:
                 # 弹出确认对话框
-                confirmation_dialog = QDialog(root)
+                confirmation_dialog = QDialog(gui_core)
                 confirmation_dialog.setWindowTitle("打包完成")
                 layout = QVBoxLayout()
 

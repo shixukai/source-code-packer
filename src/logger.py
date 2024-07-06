@@ -1,21 +1,38 @@
-# logger.py
-
 from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import QTextEdit
+
+class SingletonQTextEditManager:
+    _instance = None
+
+    @classmethod
+    def get_instance(cls):
+        if cls._instance is None:
+            cls._instance = QTextEdit()
+            cls._instance.setReadOnly(True)
+            # 设置字体，确保支持树形结构字符
+            font = QFont()
+            font.setStyleHint(QFont.Monospace)
+            font.setFamily("Courier New, Courier, Monospace")
+            cls._instance.setFont(font)
+        return cls._instance
+
 
 class ConsoleLogger:
     """
-    自定义日志记录器，用于将日志输出到 GUI 中的文本框。
+    自定义日志记录器，用于将日志输出到单例的 QTextEdit 中。
     """
-    def __init__(self, text_widget):
-        self.text_widget = text_widget
-        self.text_widget.setReadOnly(True)
-        self.log_queue = []
+    _instance = None
 
-        # 设置字体，确保支持树形结构字符
-        font = QFont()
-        font.setStyleHint(QFont.Monospace)
-        font.setFamily("Courier New, Courier, Monospace")
-        self.text_widget.setFont(font)
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            cls._instance = super(ConsoleLogger, cls).__new__(cls)
+        return cls._instance
+
+    def __init__(self):
+        if not hasattr(self, 'initialized'):  # 避免多次初始化
+            self.text_widget = SingletonQTextEditManager.get_instance()
+            self.log_queue = []
+            self.initialized = True
 
     def write(self, message):
         if message != '\n':  # 排除多余的换行
