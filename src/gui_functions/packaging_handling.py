@@ -8,8 +8,8 @@ from PyQt5.QtGui import QFontMetrics
 from .open_directory import open_directory
 from .validate_exclude_dir import validate_exclude_dir, InvalidSubdirectoryException
 from packager import run_packaging
-import platform
 from di_container import DIContainer
+from utility import open_and_select_file
 
 def on_package_button_click(root, project, logger):
     """
@@ -103,13 +103,3 @@ def on_package_button_click(root, project, logger):
     QTimer.singleShot(100, check_result)
 
 
-def open_and_select_file(file_path):
-    """
-    打开文件所在的目录并选中该文件
-    """
-    if platform.system() == "Windows":
-        os.startfile(file_path)
-    elif platform.system() == "Darwin":
-        os.system(f"open -R '{file_path}'")
-    else:
-        os.system(f"xdg-open '{os.path.dirname(file_path)}'")

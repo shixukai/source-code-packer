@@ -44,11 +44,11 @@ def package_files(project_path, files, output_dir):
 
 def print_tree(files, project_path):
     """
-    以树形结构打印打包的文件结构。
+    以树形结构打印打包的文件结构，并生成 HTML 内容。
 
     :param files: 被打包的文件路径列表
     :param project_path: 项目目录的路径
-    :return: 打包文件的树形结构字符串
+    :return: 打包文件的树形结构 HTML 字符串
     """
     tree = {}
     for file in files:
@@ -57,25 +57,33 @@ def print_tree(files, project_path):
         for part in parts[:-1]:
             d = d.setdefault(part, {})
         d.setdefault(parts[-1], None)
-    
+
     output = []
-    def print_dict(d, prefix=''):
+
+    def print_dict(d, prefix='', current_path=''):
         """
         递归打印目录结构。
 
         :param d: 表示目录结构的字典
         :param prefix: 当前的前缀，用于打印竖线
+        :param current_path: 当前路径，用于生成正确的文件路径
         """
         pointers = ['├── '] * (len(d) - 1) + ['└── ']
         for pointer, (key, value) in zip(pointers, sorted(d.items())):
-            output.append(prefix + pointer + key)
+            full_path = os.path.join(current_path, key)
             if isinstance(value, dict):
+                output.append(prefix + pointer + key)
                 extension = '│   ' if pointer == '├── ' else '    '
-                print_dict(value, prefix + extension)
+                print_dict(value, prefix + extension, full_path)
+            else:
+                file_path = os.path.join(project_path, full_path)
+                open_link = f'<a href="file://{file_path}">打开</a>'
+                copy_link = f'<a href="copy://{file_path}">复制内容</a>'
+                copy_with_filename_link = f'<a href="copywithname://{file_path}">复制内容带文件名</a>'
+                output.append(prefix + pointer + f"{key} [{open_link} | {copy_link} | {copy_with_filename_link}]")
 
     print_dict(tree)
-    return '\n'.join(output)
-
+    return '<html><body><pre>' + '\n'.join(output) + '</pre></body></html>'
 def run_packaging(project_path, extensions, exclude_dirs, result_queue):
     """
     执行打包过程，并将结果放入队列。
