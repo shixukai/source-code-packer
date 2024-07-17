@@ -1,5 +1,3 @@
-# packager.py
-
 import os
 import tarfile
 from pathlib import Path
@@ -84,6 +82,7 @@ def print_tree(files, project_path):
 
     print_dict(tree)
     return '<html><body><pre>' + '\n'.join(output) + '</pre></body></html>'
+
 def run_packaging(project_path, extensions, exclude_dirs, result_queue):
     """
     执行打包过程，并将结果放入队列。
@@ -104,7 +103,8 @@ def run_packaging(project_path, extensions, exclude_dirs, result_queue):
         output_path = package_files(project_path, files_to_package, output_dir)
         
         file_tree = print_tree(files_to_package, project_path)
-        result_message = f"压缩包创建在: {output_path}\n打包的文件列表:\n{file_tree}"
+        tar_link = f'<a href="file://{output_path}">{output_path}</a>'
+        result_message = f"压缩包创建在: {tar_link}\n打包的文件列表:\n{file_tree}"
         
         result_queue.put((result_message, output_path))
     except Exception as e:
