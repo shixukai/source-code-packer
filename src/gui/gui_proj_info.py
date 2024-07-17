@@ -170,6 +170,7 @@ class ProjectInfoWidget:
         if self.selected_project:
             initialize_extensions(self, self.tags_layout, self.selected_project["file_extensions"], self.tags_frame, self.extensions_var)
             self.exclude_dirs_entry.setText(";".join(self.selected_project["exclude_dirs"]))
+            self.project_path_combo.setCurrentText(self.selected_project["project_path"])
         else:
             self.clear_current_config()
 
