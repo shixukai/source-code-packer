@@ -75,9 +75,9 @@ def print_tree(files, project_path):
                 print_dict(value, prefix + extension, full_path)
             else:
                 file_path = os.path.join(project_path, full_path)
-                open_link = f'<a href="file://{file_path}">打开</a>'
+                open_link = f'<a href="file://{file_path}">打开目录</a>'
                 copy_link = f'<a href="copy://{file_path}#复制内容">复制内容</a>'
-                copy_with_filename_link = f'<a href="copywithname://{file_path}#复制内容带文件名">复制内容带文件名</a>'
+                copy_with_filename_link = f'<a href="copywithname://{file_path}#复制内容和文件名">复制内容和文件名</a>'
                 output.append(f"{prefix + pointer + key}<br>{prefix}{' ' * len(pointer)}[{open_link} | {copy_link} | {copy_with_filename_link}]")
 
     print_dict(tree)
