@@ -1,5 +1,5 @@
-# logger.py
 import re
+import html
 from PyQt5.QtGui import QFont, QTextCursor
 from PyQt5.QtWidgets import QTextBrowser, QApplication
 from PyQt5.QtCore import QUrl, QMimeData
@@ -64,7 +64,7 @@ class ConsoleLogger:
             mime_data.setText(content)
             clipboard.setMimeData(mime_data)
 
-            # 记录当前光标位置,在这期间不能打印其他日志，否则会滚动到最下面
+            # 记录当前光标位置
             cursor = self.text_widget.textCursor()
             self.text_widget.setTextCursor(cursor)
             scroll_pos = self.text_widget.verticalScrollBar().value()
@@ -89,9 +89,12 @@ class ConsoleLogger:
     def update_button_text(self, url, text):
         """更新按钮文字"""
         html_content = self.text_widget.toHtml()
-        
+
+        # 转义URL
+        escaped_url = html.escape(url.toString())
+
         # 使用正则表达式匹配并替换 HTML 内容中的按钮文字，添加绿色样式
-        pattern = re.compile(rf'(<a href="{re.escape(url.toString())}".*?>)(.*?)(</a>)', re.IGNORECASE)
+        pattern = re.compile(rf'(<a href="{escaped_url}".*?>)(.*?)(</a>)', re.IGNORECASE)
         new_html = pattern.sub(rf'\1<span style="color:green;">{text}</span>\3', html_content)
 
         self.text_widget.setHtml(new_html)
