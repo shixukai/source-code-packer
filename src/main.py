@@ -1,4 +1,6 @@
 # main.py
+
+import signal
 from PyQt5.QtWidgets import QApplication
 from gui.gui_core import SourceCodePackerGUI
 from gui.gui_proj_info import ProjectInfoWidget
@@ -24,6 +26,10 @@ def create_gui():
 
     window.create_set_layout()
     window.show()
+
+    # 设置信号处理程序以捕获SIGINT信号并退出应用程序
+    signal.signal(signal.SIGINT, signal.SIG_DFL)
+
     app.exec_()
 
 
