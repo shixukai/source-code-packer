@@ -1,5 +1,6 @@
+# logger.py
 import re
-from PyQt5.QtGui import QFont, QTextCursor, QDesktopServices
+from PyQt5.QtGui import QFont, QTextCursor
 from PyQt5.QtWidgets import QTextBrowser, QApplication
 from PyQt5.QtCore import QUrl, QMimeData
 import os
@@ -63,7 +64,10 @@ class ConsoleLogger:
             mime_data.setText(content)
             clipboard.setMimeData(mime_data)
 
-            self.write(f"文件内容已复制到粘贴板: {file_path}")
+            # 记录当前光标位置,在这期间不能打印其他日志，否则会滚动到最下面
+            cursor = self.text_widget.textCursor()
+            self.text_widget.setTextCursor(cursor)
+            scroll_pos = self.text_widget.verticalScrollBar().value()
 
             # 更新最后复制的文件提示
             if self.last_copied_button:
@@ -74,6 +78,9 @@ class ConsoleLogger:
             self.update_button_text(url, "已复制")
             self.last_copied_button = url
 
+            # 恢复光标位置
+            self.text_widget.verticalScrollBar().setValue(scroll_pos)
+
         except FileNotFoundError:
             self.write(f"文件未找到：{file_path}")
         except Exception as e:
@@ -81,17 +88,10 @@ class ConsoleLogger:
 
     def update_button_text(self, url, text):
         """更新按钮文字"""
-        cursor = self.text_widget.textCursor()
-        cursor.movePosition(QTextCursor.Start)
-        self.text_widget.setTextCursor(cursor)
-        scroll_pos = self.text_widget.verticalScrollBar().value()
-
         html_content = self.text_widget.toHtml()
-        file_path = url.path()
         
         # 使用正则表达式匹配并替换 HTML 内容中的按钮文字，添加绿色样式
         pattern = re.compile(rf'(<a href="{re.escape(url.toString())}".*?>)(.*?)(</a>)', re.IGNORECASE)
         new_html = pattern.sub(rf'\1<span style="color:green;">{text}</span>\3', html_content)
 
         self.text_widget.setHtml(new_html)
-        self.text_widget.verticalScrollBar().setValue(scroll_pos)
