@@ -95,6 +95,8 @@ def show_current_config(logger):
     config_path = resource_path(DEFAULT_CONFIG_PATH)
     if not os.path.exists(config_path):
         logger.write("配置文件不存在\n")
+        return
     with open(config_path, 'r', encoding='utf-8') as file:
         config = json.load(file)
-        logger.write(f"当前配置：\n{json.dumps(config, indent=4)}\n")
+        pretty_config = json.dumps(config, indent=4, ensure_ascii=False)
+        logger.write(f"当前配置：\n<pre>{pretty_config}</pre>\n")

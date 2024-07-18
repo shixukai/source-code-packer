@@ -182,14 +182,14 @@ def reload_current_config_handler(gui):
 def export_current_config_handler(gui):
     # Open file save dialog to choose the export path
     gui_core = DIContainer().resolve("gui_core")
-    export_path = QFileDialog.getSaveFileName(gui, "导出配置", "", "JSON files (*.json)")[0]
+    export_path = QFileDialog.getSaveFileName(gui_core, "导出配置", "", "JSON files (*.json)")[0]
     if export_path:
         export_config(export_path)
         QMessageBox.information(gui_core, "成功", "配置已导出到: " + export_path)
 
 def import_config_handler(gui):
     gui_core = DIContainer().resolve("gui_core")
-    import_path = QFileDialog.getOpenFileName(gui, "选择配置文件", "", "JSON files (*.json)")[0]
+    import_path = QFileDialog.getOpenFileName(gui_core, "选择配置文件", "", "JSON files (*.json)")[0]
     
     if not import_path:
         return  # 用户取消了文件选择
