@@ -76,13 +76,13 @@ def print_tree(files, project_path):
             else:
                 file_path = os.path.join(project_path, full_path)
                 open_link = f'<a href="file://{file_path}">打开</a>'
-                copy_link = f'<a href="copy://{file_path}">复制内容</a>'
-                copy_with_filename_link = f'<a href="copywithname://{file_path}">复制内容带文件名</a>'
+                copy_link = f'<a href="copy://{file_path}#复制内容">复制内容</a>'
+                copy_with_filename_link = f'<a href="copywithname://{file_path}#复制内容带文件名">复制内容带文件名</a>'
                 output.append(f"{prefix + pointer + key}<br>{prefix}{' ' * len(pointer)}[{open_link} | {copy_link} | {copy_with_filename_link}]")
 
     print_dict(tree)
     return '<html><body><pre>' + '\n'.join(output) + '</pre></body></html>'
-
+    
 def run_packaging(project_path, extensions, exclude_dirs, result_queue):
     """
     执行打包过程，并将结果放入队列。
