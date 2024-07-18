@@ -215,6 +215,7 @@ def show_current_config_handler(gui):
 def show_tree_handler(gui):
     """显示目录树"""
     logger = DIContainer().resolve("logger")
+    logger.clear()  # 清空日志内容
     project_path = gui.project_path_combo.currentText().strip()
     if not project_path:
         logger.write("未选择项目路径\n")
@@ -234,6 +235,7 @@ def show_tree_handler(gui):
 def show_enhanced_tree_handler(gui):
     """显示增强目录树"""
     logger = DIContainer().resolve("logger")
+    logger.clear()  # 清空日志内容
     project_path = gui.project_path_combo.currentText().strip()
     if not project_path:
         logger.write("未选择项目路径\n")
