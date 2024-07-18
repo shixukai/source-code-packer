@@ -78,7 +78,7 @@ def print_tree(files, project_path):
                 open_link = f'<a href="file://{file_path}">打开</a>'
                 copy_link = f'<a href="copy://{file_path}">复制内容</a>'
                 copy_with_filename_link = f'<a href="copywithname://{file_path}">复制内容带文件名</a>'
-                output.append(prefix + pointer + f"{key} [{open_link} | {copy_link} | {copy_with_filename_link}]")
+                output.append(f"{prefix + pointer + key}<br>{prefix}{' ' * len(pointer)}[{open_link} | {copy_link} | {copy_with_filename_link}]")
 
     print_dict(tree)
     return '<html><body><pre>' + '\n'.join(output) + '</pre></body></html>'
