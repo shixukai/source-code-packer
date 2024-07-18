@@ -82,7 +82,46 @@ def print_tree(files, project_path):
 
     print_dict(tree)
     return '<html><body><pre>' + '\n'.join(output) + '</pre></body></html>'
-    
+
+def print_plain_tree(files, project_path):
+    """
+    以树形结构打印打包的文件结构，并生成纯文本内容。
+
+    :param files: 被打包的文件路径列表
+    :param project_path: 项目目录的路径
+    :return: 打包文件的树形结构纯文本字符串
+    """
+    tree = {}
+    for file in files:
+        parts = Path(file).relative_to(project_path).parts
+        d = tree
+        for part in parts[:-1]:
+            d = d.setdefault(part, {})
+        d.setdefault(parts[-1], None)
+
+    output = []
+
+    def print_dict(d, prefix='', current_path=''):
+        """
+        递归打印目录结构。
+
+        :param d: 表示目录结构的字典
+        :param prefix: 当前的前缀，用于打印竖线
+        :param current_path: 当前路径，用于生成正确的文件路径
+        """
+        pointers = ['├── '] * (len(d) - 1) + ['└── ']
+        for pointer, (key, value) in zip(pointers, sorted(d.items())):
+            full_path = os.path.join(current_path, key)
+            if isinstance(value, dict):
+                output.append(prefix + pointer + key)
+                extension = '│   ' if pointer == '├── ' else '    '
+                print_dict(value, prefix + extension, full_path)
+            else:
+                output.append(prefix + pointer + key)
+
+    print_dict(tree)
+    return '\n'.join(output)
+
 def run_packaging(project_path, extensions, exclude_dirs, result_queue):
     """
     执行打包过程，并将结果放入队列。

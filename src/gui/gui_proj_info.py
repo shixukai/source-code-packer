@@ -1,8 +1,7 @@
-
 from PyQt5.QtCore import Qt
 from PyQt5.QtWidgets import (
     QWidget, QHBoxLayout, QLabel, QComboBox,
-    QLineEdit, QFrame, QScrollArea, QGridLayout, QGroupBox
+    QLineEdit, QFrame, QScrollArea, QGridLayout, QGroupBox, QPushButton
 )
 
 from gui.layout_initializers import create_styled_button
@@ -17,7 +16,9 @@ from gui_functions.event_handlers import (
     export_current_config_handler,
     import_config_handler,
     show_current_config_handler,
-    add_exclude_dir_handler
+    add_exclude_dir_handler,
+    show_tree_handler,  # 新增
+    show_enhanced_tree_handler  # 新增
 )
 from gui_functions.open_directory import open_directory
 from gui_functions.extension_handlers import initialize_extensions, add_extension
@@ -42,14 +43,12 @@ class ProjectInfoWidget:
 
         self.project_info_frame = QGroupBox()
 
-
         self.exclude_dirs_entry = QLineEdit()
         self.extensions_var = QLineEdit()
 
         self.tags_frame = QScrollArea()
         self.tags_widget = QWidget()
         self.tags_layout = QHBoxLayout(self.tags_widget)  # 使用 QHBoxLayout 以确保标签水平排列
-
 
         self.logger = DIContainer().resolve("logger")
 
@@ -116,7 +115,6 @@ class ProjectInfoWidget:
         config_buttons_layout = QHBoxLayout(config_buttons_frame)
         config_buttons_layout.setContentsMargins(0, 0, 0, 0)  # 设置左、上、右、下边距均为0
 
-        
         save_button = create_styled_button("保存配置")
         save_button.clicked.connect(lambda: save_current_config_handler(self))
         config_buttons_layout.addWidget(save_button)
@@ -158,7 +156,18 @@ class ProjectInfoWidget:
         delete_button = create_styled_button("删除配置", "red-bg")
         delete_button.clicked.connect(lambda: delete_current_config_handler(self))
         extra_buttons_layout.addWidget(delete_button)
-        project_info_layout.addWidget(extra_buttons_frame, 5, 0, 1, 3, alignment=Qt.AlignTop | Qt.AlignLeft)
+
+        # 添加显示目录树按钮
+        show_tree_button = create_styled_button("显示目录树")
+        show_tree_button.clicked.connect(lambda: show_tree_handler(self))
+        extra_buttons_layout.addWidget(show_tree_button, alignment=Qt.AlignRight)
+
+        # 添加显示增强目录树按钮
+        show_enhanced_tree_button = create_styled_button("显示增强目录树")
+        show_enhanced_tree_button.clicked.connect(lambda: show_enhanced_tree_handler(self))
+        extra_buttons_layout.addWidget(show_enhanced_tree_button)
+
+        project_info_layout.addWidget(extra_buttons_frame, 5, 0, 1, 3)
 
     def open_folder(self):
         """打开当前所选项目路径"""

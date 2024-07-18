@@ -6,6 +6,7 @@ from di_container import DIContainer
 from .exclude_handlers import add_exclude_dir
 from .packaging_handling import on_package_button_click
 from config import save_config, delete_config, read_config, export_config, import_config, show_current_config
+from packager import gather_files, print_tree, print_plain_tree
 
 def load_project_config_handler(gui):
     """根据选择的项目加载配置"""
@@ -25,7 +26,6 @@ def load_project_config_handler(gui):
     }
     gui.temp_extensions = []
     gui.temp_exclude_dirs = []
-
 
 def browse_project_path_handler(gui):
     """浏览选择项目路径"""
@@ -52,7 +52,6 @@ def browse_project_path_handler(gui):
         
         gui.clear_current_config()
         gui.load_project_details()
-
 
 def add_exclude_dir_handler(gui):
     """添加排除目录"""
@@ -85,7 +84,6 @@ def package_code_handler(gui):
         return
 
     on_package_button_click(gui, project, gui.logger)
-
 
 def save_current_config_handler(gui):
     """保存当前项目配置到config.json"""
@@ -213,3 +211,41 @@ def import_config_handler(gui):
 
 def show_current_config_handler(gui):
     show_current_config(gui.logger)
+
+def show_tree_handler(gui):
+    """显示目录树"""
+    logger = DIContainer().resolve("logger")
+    project_path = gui.project_path_combo.currentText().strip()
+    if not project_path:
+        logger.write("未选择项目路径\n")
+        return
+
+    extensions = gui.selected_project["file_extensions"]
+    exclude_dirs = gui.selected_project["exclude_dirs"]
+
+    files = gather_files(project_path, extensions, exclude_dirs)
+    if not files:
+        logger.write("没有符合条件的文件\n")
+        return
+
+    tree_text = print_plain_tree(files, project_path)
+    logger.write(f"<pre>{tree_text}</pre>")
+
+def show_enhanced_tree_handler(gui):
+    """显示增强目录树"""
+    logger = DIContainer().resolve("logger")
+    project_path = gui.project_path_combo.currentText().strip()
+    if not project_path:
+        logger.write("未选择项目路径\n")
+        return
+
+    extensions = gui.selected_project["file_extensions"]
+    exclude_dirs = gui.selected_project["exclude_dirs"]
+
+    files = gather_files(project_path, extensions, exclude_dirs)
+    if not files:
+        logger.write("没有符合条件的文件\n")
+        return
+
+    tree_html = print_tree(files, project_path)
+    logger.write(tree_html)
